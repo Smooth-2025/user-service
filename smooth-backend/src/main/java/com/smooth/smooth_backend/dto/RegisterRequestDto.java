@@ -25,4 +25,8 @@ public class RegisterRequestDto {
     private User.Gender gender;
 
     private User.BloodType bloodType; // 선택사항
+
+    private String emergencyContact1;
+    private String emergencyContact2;
+    private String emergencyContact3;
 }
