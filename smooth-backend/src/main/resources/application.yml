@@ -21,6 +21,10 @@ spring:
       name: admin
       password: admin
 
+jwt:
+  secret: smoothV2XSecretKeyForJWTTokenGenerationAndValidation2025
+  expiration: 86400000  # 24시간
+
 logging:
   level:
     com.smooth.backend: DEBUG

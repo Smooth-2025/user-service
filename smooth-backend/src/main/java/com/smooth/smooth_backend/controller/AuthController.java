@@ -1,5 +1,6 @@
 package com.smooth.smooth_backend.controller;
 
+import com.smooth.smooth_backend.config.JwtTokenProvider;
 import com.smooth.smooth_backend.dto.LoginRequestDto;
 import com.smooth.smooth_backend.dto.RegisterRequestDto;
 import com.smooth.smooth_backend.entity.User;
@@ -18,16 +19,22 @@ import java.util.Map;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Validated @RequestBody RegisterRequestDto dto) {
         try {
             User user = userService.register(dto);
 
+            //회원가입 후 자동로그인 ( jwt token 생성 )
+            String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "회원가입이 완료되었습니다.");
             response.put("userId", user.getId());
+            response.put("name", user.getName());
+            response.put("token", token);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -44,11 +51,14 @@ public class AuthController {
         try {
             User user = userService.login(dto);
 
+            String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
+
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "로그인 성공");
             response.put("userId", user.getId());
             response.put("name", user.getName());
+            response.put("token", token);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
