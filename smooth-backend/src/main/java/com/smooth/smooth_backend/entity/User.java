@@ -38,6 +38,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     private BloodType bloodType;
 
+    @Column(name = "emergency_contact_1")
+    private String emergencyContact1;
+
+    @Column(name = "emergency_contact_2")
+    private String emergencyContact2;
+
+    @Column(name = "emergency_contact_3")
+    private String emergencyContact3;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

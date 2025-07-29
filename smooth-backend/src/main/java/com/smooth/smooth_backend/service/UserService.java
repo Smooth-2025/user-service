@@ -30,7 +30,11 @@ public class UserService {
         user.setName(dto.getName());
         user.setPhone(dto.getPhone());
         user.setGender(dto.getGender());
+
         user.setBloodType(dto.getBloodType());
+        user.setEmergencyContact1(dto.getEmergencyContact1());
+        user.setEmergencyContact2(dto.getEmergencyContact2());
+        user.setEmergencyContact3(dto.getEmergencyContact3());
 
         return userRepository.save(user);
     }
