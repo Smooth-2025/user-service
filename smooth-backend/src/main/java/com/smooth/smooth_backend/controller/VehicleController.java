@@ -32,7 +32,7 @@ public class VehicleController {
             sessionData.put("vehicleId", vehicleId);
             sessionData.put("vehicleType", vehicleType);
             sessionData.put("createdAt", System.currentTimeMillis());
-            sessionData.put("expiresAt", System.currentTimeMillis() + 300000); // 5분
+            sessionData.put("expiresAt", System.currentTimeMillis() + 180000); // 5분
 
             qrSessions.put(sessionToken, sessionData);
 
