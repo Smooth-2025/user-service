@@ -56,7 +56,8 @@ public class VehicleController {
         try {
             // 현재 인증된 사용자 정보
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) auth.getPrincipal();
+            String userIdStr = (String) auth.getPrincipal();
+            Long userId = Long.valueOf(userIdStr);
 
             String sessionToken = request.get("sessionToken");
 
@@ -99,7 +100,8 @@ public class VehicleController {
     public ResponseEntity<?> getVehicleStatus() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) auth.getPrincipal();
+            String userIdStr = (String) auth.getPrincipal();
+            Long userId = Long.valueOf(userIdStr);
 
             String vehicleId = userVehicleMap.get(userId);
 
@@ -122,7 +124,8 @@ public class VehicleController {
     public ResponseEntity<?> disconnectVehicle() {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            Long userId = (Long) auth.getPrincipal();
+            String userIdStr = (String) auth.getPrincipal();
+            Long userId = Long.valueOf(userIdStr);
 
             userVehicleMap.remove(userId);
 
