@@ -18,7 +18,8 @@ public class TestController {
     public ResponseEntity<?> protectedEndpoint() {
         // 현재 인증된 사용자 정보 가져오기
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Long userId = (Long) authentication.getPrincipal();
+        String userIdStr = (String) authentication.getPrincipal();
+        Long userId = Long.valueOf(userIdStr);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
