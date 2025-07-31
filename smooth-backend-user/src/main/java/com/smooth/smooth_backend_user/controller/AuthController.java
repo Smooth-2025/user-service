@@ -3,6 +3,9 @@ package com.smooth.smooth_backend_user.controller;
 import com.smooth.smooth_backend_user.config.JwtTokenProvider;
 import com.smooth.smooth_backend_user.dto.LoginRequestDto;
 import com.smooth.smooth_backend_user.dto.RegisterRequestDto;
+import com.smooth.smooth_backend_user.dto.response.CommonResponseDto;
+import com.smooth.smooth_backend_user.dto.response.LoginResponseDto;
+import com.smooth.smooth_backend_user.dto.response.RegisterResponseDto;
 import com.smooth.smooth_backend_user.entity.User;
 import com.smooth.smooth_backend_user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,62 +42,53 @@ public class AuthController {
         return null;
     }
 
-    // 토큰 블랙리스트 확인 메서드 (다른 클래스에서 사용)
+    // 토큰 블랙리스트 확인 (다른 클래스에서 씀)
     public static boolean isTokenBlacklisted(String token) {
         return tokenBlacklist.contains(token);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Validated @RequestBody RegisterRequestDto dto) {
+    public ResponseEntity<RegisterResponseDto> register(@Validated @RequestBody RegisterRequestDto dto) {
         try {
             User user = userService.register(dto);
 
             //회원가입 후 자동로그인 ( jwt token 생성 )
             String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "회원가입이 완료되었습니다.");
-            response.put("userId", user.getId());
-            response.put("name", user.getName());
-            response.put("token", token);
-
+            RegisterResponseDto response = RegisterResponseDto.success(
+                    user.getId(),
+                    user.getName(),
+                    token
+            );
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest()
+                    .body(RegisterResponseDto.error(e.getMessage()));
         }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Validated @RequestBody LoginRequestDto dto) {
+    public ResponseEntity<LoginResponseDto> login(@Validated @RequestBody LoginRequestDto dto) {
         try {
             User user = userService.login(dto);
 
             String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "로그인 성공");
-            response.put("userId", user.getId());
-            response.put("name", user.getName());
-            response.put("token", token);
+            LoginResponseDto response = LoginResponseDto.success(
+                    user.getId(),
+                    user.getName(),
+                    token
+            );
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest()
+                    .body(LoginResponseDto.error(e.getMessage()));
         }
     }
 
     @PostMapping("/logout")
-    public  ResponseEntity<?> logout(HttpServletRequest request) {
+    public ResponseEntity<CommonResponseDto> logout(HttpServletRequest request) {
         try {
             // Authorization 헤더에서 토큰 추출
             String token = getTokenFromRequest(request);
@@ -103,27 +97,20 @@ public class AuthController {
 
                 // 토큰을 블랙리스트에 추가
                 tokenBlacklist.add(token);
-
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", true);
-                response.put("message", "로그아웃이 완료되었습니다.");
-
-                return ResponseEntity.ok(response);
+                return ResponseEntity.ok(CommonResponseDto.success("로그아웃이 완료되었습니다."));
             } else {
-                throw new RuntimeException("유효하지 않은 토큰입니다.");
+                return ResponseEntity.badRequest()
+                        .body(CommonResponseDto.error("유효하지 않은 토큰입니다."));
             }
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest()
+                    .body(CommonResponseDto.error(e.getMessage()));
         }
     }
 
     @DeleteMapping("/account")
-    public ResponseEntity<?> deleteAccount(HttpServletRequest request){
-        try{
+    public ResponseEntity<CommonResponseDto> deleteAccount(HttpServletRequest request) {
+        try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userIdStr = (String) auth.getPrincipal();
             Long userId = Long.valueOf(userIdStr);
@@ -134,17 +121,10 @@ public class AuthController {
             if (token != null) {
                 tokenBlacklist.add(token);
             }
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "회원탈퇴가 완료되었습니다.");
-
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(CommonResponseDto.success("회원탈퇴가 완료되었습니다."));
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-
-            return  ResponseEntity.badRequest().body(response);
+            return ResponseEntity.badRequest()
+                    .body(CommonResponseDto.error(e.getMessage()));
         }
     }
 }
