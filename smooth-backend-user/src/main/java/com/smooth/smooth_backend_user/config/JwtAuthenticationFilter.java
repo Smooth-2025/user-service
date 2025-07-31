@@ -1,5 +1,6 @@
 package com.smooth.smooth_backend_user.config;
 
+import com.smooth.smooth_backend_user.controller.AuthController;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,15 +30,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = getTokenFromRequest(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            Long userId = jwtTokenProvider.getUserId(token);
-            String email = jwtTokenProvider.getEmail(token);
 
-            // Spring Security에 인증 정보 설정
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            if(!AuthController.isTokenBlacklisted(token)) {
+                Long userId = jwtTokenProvider.getUserId(token);
+                String email = jwtTokenProvider.getEmail(token);
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                // Spring Security에 인증 정보 설정, String으로 변경
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userId.toString(), null, new ArrayList<>());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
 
         filterChain.doFilter(request, response);
