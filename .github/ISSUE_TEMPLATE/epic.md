@@ -7,13 +7,6 @@ assignees: ''
 
 ---
 
----
-name: Epic
-about: Epic 단위 브랜치 관리
-title: '[Epic-X] Epic명'
-labels: epic
-assignees: ''
----
 ## 🎯 Epic 목표
 [Epic의 전체적인 목표와 범위]
 
