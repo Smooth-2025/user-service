@@ -3,6 +3,8 @@ package com.smooth.smooth_backend_user.controller;
 import com.smooth.smooth_backend_user.dto.response.CommonResponseDto;
 import com.smooth.smooth_backend_user.dto.response.QrGenerateResponseDto;
 import com.smooth.smooth_backend_user.dto.response.VehicleResponseDto;
+import com.smooth.smooth_backend_user.service.RedisService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,11 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/vehicle")
+@RequiredArgsConstructor
 public class VehicleController {
 
-    // 임시 메모리 저장소 (redis or db로 변경하기)
-    private static final Map<String, Object> qrSessions = new ConcurrentHashMap<>();
-    private static final Map<Long, String> userVehicleMap = new ConcurrentHashMap<>();
+    // redis service 추가
+    private final RedisService redisService;
 
     @PostMapping("/qr-generate")
     public ResponseEntity<QrGenerateResponseDto> generateQR(@RequestBody Map<String, Object> request) {
@@ -36,7 +38,7 @@ public class VehicleController {
             sessionData.put("createdAt", System.currentTimeMillis());
             sessionData.put("expiresAt", System.currentTimeMillis() + 180000); // 3분
 
-            qrSessions.put(sessionToken, sessionData);
+            redisService.setQRSession(sessionToken, sessionData, 180);
 
             QrGenerateResponseDto response = QrGenerateResponseDto.success(
                     sessionToken,
@@ -62,7 +64,7 @@ public class VehicleController {
             String sessionToken = request.get("sessionToken");
 
             // 세션 토큰 검증
-            Map<String, Object> sessionData = (Map<String, Object>) qrSessions.get(sessionToken);
+            Map<String, Object> sessionData = (Map<String, Object>) redisService.getQRSession(sessionToken);
             if (sessionData == null) {
                 return ResponseEntity.badRequest()
                         .body(VehicleResponseDto.error("유효하지 않은 QR 코드입니다."));
@@ -71,17 +73,17 @@ public class VehicleController {
             // 만료 시간 확인
             Long expiresAt = (Long) sessionData.get("expiresAt");
             if (System.currentTimeMillis() > expiresAt) {
-                qrSessions.remove(sessionToken);
+                redisService.removeQRSession(sessionToken);
                 return ResponseEntity.badRequest()
                         .body(VehicleResponseDto.error("QR 코드가 만료되었습니다."));
             }
 
             // 차량과 사용자 연동
             String vehicleId = (String) sessionData.get("vehicleId");
-            userVehicleMap.put(userId, vehicleId);
+            redisService.setUserVehicle(userId, vehicleId);
 
             // 사용된 세션 토큰 제거
-            qrSessions.remove(sessionToken);
+            redisService.removeQRSession(sessionToken);
 
             VehicleResponseDto response = VehicleResponseDto.connectSuccess(vehicleId, userId);
 
@@ -99,7 +101,7 @@ public class VehicleController {
             String userIdStr = (String) auth.getPrincipal();
             Long userId = Long.valueOf(userIdStr);
 
-            String vehicleId = userVehicleMap.get(userId);
+            String vehicleId = redisService.getUserVehicle(userId);
             boolean connected = vehicleId != null;
 
             VehicleResponseDto response = VehicleResponseDto.statusResponse(
@@ -122,7 +124,7 @@ public class VehicleController {
             String userIdStr = (String) auth.getPrincipal();
             Long userId = Long.valueOf(userIdStr);
 
-            userVehicleMap.remove(userId);
+            redisService.removeUserVehicle(userId);
 
             VehicleResponseDto response = VehicleResponseDto.disconnectSuccess();
 
