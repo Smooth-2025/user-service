@@ -14,5 +14,16 @@ services:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: smooth-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
 volumes:
   mysql_data:
+  redis_data:

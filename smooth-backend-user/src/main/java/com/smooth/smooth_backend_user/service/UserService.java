@@ -1,7 +1,7 @@
 package com.smooth.smooth_backend_user.service;
 
-import com.smooth.smooth_backend_user.dto.LoginRequestDto;
-import com.smooth.smooth_backend_user.dto.RegisterRequestDto;
+import com.smooth.smooth_backend_user.dto.request.LoginRequestDto;
+import com.smooth.smooth_backend_user.dto.request.RegisterRequestDto;
 import com.smooth.smooth_backend_user.entity.User;
 import com.smooth.smooth_backend_user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
