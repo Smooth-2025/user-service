@@ -1,4 +1,4 @@
-package com.smooth.smooth_backend_user.dto;
+package com.smooth.smooth_backend_user.dto.request;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;

@@ -1,4 +1,4 @@
-package com.smooth.smooth_backend_user.dto;
+package com.smooth.smooth_backend_user.dto.request;
 
 import com.smooth.smooth_backend_user.entity.User;
 import lombok.Data;

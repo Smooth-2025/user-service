@@ -68,4 +68,15 @@ public class JwtTokenProvider {
             return false;
         }
     }
+
+    // 토큰 만료 시간
+    public long getExpirationTime(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.getExpiration().getTime();
+    }
 }
