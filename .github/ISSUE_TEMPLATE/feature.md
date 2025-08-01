@@ -7,13 +7,6 @@ assignees: ''
 
 ---
 
----
-name: Feature
-about: User Story 기반 기능 개발
-title: '[US-X.X] 기능명'
-labels: feature
-assignees: ''
----
 ## 📝 User Story
 **As a** [사용자 역할]
 **I want** [원하는 기능]
