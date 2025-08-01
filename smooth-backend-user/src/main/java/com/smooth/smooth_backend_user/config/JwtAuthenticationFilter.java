@@ -1,6 +1,7 @@
 package com.smooth.smooth_backend_user.config;
 
 import com.smooth.smooth_backend_user.controller.AuthController;
+import com.smooth.smooth_backend_user.service.RedisService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisService redisService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -31,7 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
 
-            if(!AuthController.isTokenBlacklisted(token)) {
+            //redis 기반 블랙리스트 확인
+            if(!redisService.isTokenBlacklisted(token)) {
                 Long userId = jwtTokenProvider.getUserId(token);
                 String email = jwtTokenProvider.getEmail(token);
 

@@ -1,12 +1,13 @@
 package com.smooth.smooth_backend_user.controller;
 
 import com.smooth.smooth_backend_user.config.JwtTokenProvider;
-import com.smooth.smooth_backend_user.dto.LoginRequestDto;
-import com.smooth.smooth_backend_user.dto.RegisterRequestDto;
+import com.smooth.smooth_backend_user.dto.request.LoginRequestDto;
+import com.smooth.smooth_backend_user.dto.request.RegisterRequestDto;
 import com.smooth.smooth_backend_user.dto.response.CommonResponseDto;
 import com.smooth.smooth_backend_user.dto.response.LoginResponseDto;
 import com.smooth.smooth_backend_user.dto.response.RegisterResponseDto;
 import com.smooth.smooth_backend_user.entity.User;
+import com.smooth.smooth_backend_user.service.RedisService;
 import com.smooth.smooth_backend_user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -16,12 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.SimpleTimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,9 +24,7 @@ public class AuthController {
 
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
-
-    //jwt토큰 블랙리스트
-    private static final Set<String> tokenBlacklist = ConcurrentHashMap.newKeySet();
+    private final RedisService redisService;
 
     // 토큰 추출
     private String getTokenFromRequest(HttpServletRequest request) {
@@ -43,8 +36,8 @@ public class AuthController {
     }
 
     // 토큰 블랙리스트 확인 (다른 클래스에서 씀)
-    public static boolean isTokenBlacklisted(String token) {
-        return tokenBlacklist.contains(token);
+    public boolean isTokenBlacklisted(String token) {
+        return redisService.isTokenBlacklisted(token);
     }
 
     @PostMapping("/register")
@@ -95,8 +88,12 @@ public class AuthController {
 
             if (token != null && jwtTokenProvider.validateToken(token)) {
 
-                // 토큰을 블랙리스트에 추가
-                tokenBlacklist.add(token);
+                // jwt 만료시간까지 redis에 블랙리스트 저장
+                long remainingTime = jwtTokenProvider.getExpirationTime(token) - System.currentTimeMillis();
+                if (remainingTime > 0) {
+                    redisService.addToBlacklist(token, remainingTime / 1000);
+                }
+
                 return ResponseEntity.ok(CommonResponseDto.success("로그아웃이 완료되었습니다."));
             } else {
                 return ResponseEntity.badRequest()
@@ -117,9 +114,15 @@ public class AuthController {
 
             userService.deleteAccount(userId);
 
+            // 사용자 관련 redis 데이터 정리
+            redisService.removeUserVehicle(userId);
+
             String token = getTokenFromRequest(request);
             if (token != null) {
-                tokenBlacklist.add(token);
+                long remainingTime = jwtTokenProvider.getExpirationTime(token) - System.currentTimeMillis();
+                if (remainingTime > 0) {
+                    redisService.addToBlacklist(token, remainingTime / 1000);
+                }
             }
             return ResponseEntity.ok(CommonResponseDto.success("회원탈퇴가 완료되었습니다."));
         } catch (Exception e) {
