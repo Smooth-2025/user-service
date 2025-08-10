@@ -114,9 +114,6 @@ public class AuthController {
 
             userService.deleteAccount(userId);
 
-            // 사용자 관련 redis 데이터 정리
-            redisService.removeUserVehicle(userId);
-
             String token = getTokenFromRequest(request);
             if (token != null) {
                 long remainingTime = jwtTokenProvider.getExpirationTime(token) - System.currentTimeMillis();
