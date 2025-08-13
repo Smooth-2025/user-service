@@ -3,10 +3,11 @@ package com.smooth.smooth_backend_user.controller;
 import com.smooth.smooth_backend_user.config.JwtTokenProvider;
 import com.smooth.smooth_backend_user.dto.request.LoginRequestDto;
 import com.smooth.smooth_backend_user.dto.request.RegisterRequestDto;
-import com.smooth.smooth_backend_user.dto.response.CommonResponseDto;
-import com.smooth.smooth_backend_user.dto.response.LoginResponseDto;
-import com.smooth.smooth_backend_user.dto.response.RegisterResponseDto;
+import com.smooth.smooth_backend_user.dto.request.SendVerificationRequestDto;
+import com.smooth.smooth_backend_user.dto.request.VerifyEmailRequestDto;
+import com.smooth.smooth_backend_user.dto.response.*;
 import com.smooth.smooth_backend_user.entity.User;
+import com.smooth.smooth_backend_user.service.EmailVerificationService;
 import com.smooth.smooth_backend_user.service.RedisService;
 import com.smooth.smooth_backend_user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -25,6 +29,52 @@ public class AuthController {
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisService redisService;
+    private final EmailVerificationService emailVerificationService;
+
+    @PostMapping("/send-verification")
+    public ResponseEntity<SendVerificationResponseDto> sendVerificationCode(
+            @Validated @RequestBody SendVerificationRequestDto dto) {
+        try {
+            emailVerificationService.sendVerificationCode(dto.getEmail());
+
+            SendVerificationResponseDto response = SendVerificationResponseDto.success(
+                    dto.getEmail(),
+                    180 // 3분 = 180초
+            );
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(SendVerificationResponseDto.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<VerifyEmailResponseDto> verifyEmailCode(
+            @Validated @RequestBody VerifyEmailRequestDto dto) {
+        try {
+            boolean isValid = emailVerificationService.verifyCode(dto.getEmail(), dto.getCode());
+
+            if (isValid) {
+                return ResponseEntity.ok(VerifyEmailResponseDto.success(dto.getEmail()));
+            } else {
+                return ResponseEntity.badRequest()
+                        .body(VerifyEmailResponseDto.error("인증번호를 확인해 주세요"));
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(VerifyEmailResponseDto.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/check-email")
+    public ResponseEntity<Map<String, Boolean>> checkEmailDuplicate(@RequestParam String email) {
+        boolean isDuplicate = userService.isEmailExists(email);
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isDuplicate", isDuplicate);
+        return ResponseEntity.ok(response);
+    }
 
     // 토큰 추출
     private String getTokenFromRequest(HttpServletRequest request) {

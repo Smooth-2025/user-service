@@ -19,6 +19,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    public boolean isEmailExists(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
     public User register(RegisterRequestDto dto) {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(dto.getEmail())) {
@@ -80,4 +84,5 @@ public class UserService {
 
         userRepository.delete(user);
     }
+
 }

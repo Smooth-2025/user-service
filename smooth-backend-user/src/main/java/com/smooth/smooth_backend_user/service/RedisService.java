@@ -42,4 +42,14 @@ public class RedisService {
     public boolean hasKey(String key) {
         return redisTemplate.hasKey(key);
     }
+
+    // 문자열 전용 메서드 추가
+    public void setStringValue(String key, String value, long timeoutInSeconds) {
+        redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(timeoutInSeconds));
+    }
+
+    public String getStringValue(String key) {
+        Object value = redisTemplate.opsForValue().get(key);
+        return value != null ? value.toString() : null;
+    }
 }
