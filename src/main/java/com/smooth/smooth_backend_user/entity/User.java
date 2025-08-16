@@ -64,6 +64,10 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "user", optional = true)
+    private UserVehicle userVehicle;
+
     public enum Gender {
         MALE, FEMALE
     }
