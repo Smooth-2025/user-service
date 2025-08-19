@@ -22,7 +22,7 @@ public class Vehicle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "plate_number", nullable = false, length = 20)
+    @Column(name = "plate_number", nullable = false, length = 8)
     private String plateNumber;
 
     @Column(name = "imei", nullable = false, length = 15)
