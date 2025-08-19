@@ -1,7 +1,9 @@
 package com.smooth.smooth_backend_user.service;
 
+import com.smooth.smooth_backend_user.dto.request.ChangePasswordRequestDto;
 import com.smooth.smooth_backend_user.dto.request.LoginRequestDto;
 import com.smooth.smooth_backend_user.dto.request.RegisterRequestDto;
+import com.smooth.smooth_backend_user.dto.request.UpdateEmergencyInfoRequestDto;
 import com.smooth.smooth_backend_user.entity.User;
 import com.smooth.smooth_backend_user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +73,8 @@ public class UserService {
         return user;
     }
 
-    //사용자 찾기
+    // 회원 정보 조회 (읽기 전용)
+    @Transactional(readOnly = true)
     public User findById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
@@ -83,6 +86,40 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         userRepository.delete(user);
+    }
+
+    // 비밀번호 변경
+    public void changePassword(Long userId, ChangePasswordRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        // 현재 비밀번호 확인
+        if (!passwordEncoder.matches(dto.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 새 비밀번호 확인
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            throw new RuntimeException("새 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 비밀번호 변경
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    // 응급정보 수정
+    public User updateEmergencyInfo(Long userId, UpdateEmergencyInfoRequestDto dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        // 응급정보 업데이트
+        user.setBloodType(dto.getBloodType());
+        user.setEmergencyContact1(dto.getEmergencyContact1());
+        user.setEmergencyContact2(dto.getEmergencyContact2());
+        user.setEmergencyContact3(dto.getEmergencyContact3());
+
+        return userRepository.save(user);
     }
 
 }
