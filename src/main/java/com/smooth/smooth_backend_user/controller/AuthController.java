@@ -93,7 +93,18 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDto> register(@Validated @RequestBody RegisterRequestDto dto) {
         try {
+
+           // 이메일 인증 완료 여부 확인
+            if (!emailVerificationService.isEmailVerified(dto.getEmail())) {
+                return ResponseEntity.badRequest()
+                        .body(RegisterResponseDto.error("이메일 인증을 완료해주세요."));
+            }
+
+            // 회원가입 처리
             User user = userService.register(dto);
+
+            // 회원가입 완료 후 이메일 인증 상태 삭제
+            emailVerificationService.clearVerificationStatus(dto.getEmail());
 
             //회원가입 후 자동로그인 ( jwt token 생성 )
             String token = jwtTokenProvider.createToken(user.getId(), user.getEmail());

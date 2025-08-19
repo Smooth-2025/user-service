@@ -18,6 +18,7 @@ public class EmailVerificationService {
     private static final int CODE_LENGTH = 5;
     private static final int EXPIRATION_MINUTES = 3;
     private static final String CODE_PREFIX = "email_verification:";
+    private static final String VERIFIED_PREFIX = "email_verified:";
 
     // 인증코드 생성
     private String generateVerificationCode() {
@@ -82,5 +83,11 @@ public class EmailVerificationService {
         String verifiedKey = "email_verified:" + email;
         String verified = redisService.getStringValue(verifiedKey);
         return "true".equals(verified);
+    }
+//    이메일 인증 상태 삭제 (회원가입 완료 후 호출)
+    public void clearVerificationStatus(String email) {
+        String verifiedKey = VERIFIED_PREFIX + email;
+        redisService.deleteValue(verifiedKey);
+        log.info("이메일 인증 상태 삭제 완료: {}", email);
     }
 }
