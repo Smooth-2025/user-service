@@ -24,6 +24,7 @@ public class LinkVehicleResponseDto {
     public static class VehicleInfoDto {
         private Long userId;
         private Long vehicleId;
+        private String userName;
         private String plateNumber;
         private String imei;
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -41,6 +42,7 @@ public class LinkVehicleResponseDto {
                         new VehicleInfoDto(
                                 user.getId(),
                                 vehicle.getId(),
+                                user.getName(),
                                 vehicle.getPlateNumber(),
                                 vehicle.getImei(),
                                 linkedAt))
