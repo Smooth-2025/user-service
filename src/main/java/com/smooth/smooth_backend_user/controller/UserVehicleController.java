@@ -21,7 +21,7 @@ public class UserVehicleController {
     //-- 연동 차량 조회 --
     @GetMapping
     public ResponseEntity<ApiResponse<LinkVehicleResponseDto>> getRegisteredVehicle() {
-        Long userId = 5L; //TODO: 게아트웨이 header -유저 아이디 연결
+        Long userId = 1L; //TODO: 게아트웨이 header -유저 아이디 연결
         LinkVehicleResponseDto vehicleInfo = userVehicleService.getRegisteredVehicle(userId);
         return ResponseEntity.ok(
                 ApiResponse.success("사용자 차량 정보 조회 성공", vehicleInfo)
@@ -31,7 +31,7 @@ public class UserVehicleController {
     //-- 차량 연동 --
     @PostMapping
     public ResponseEntity<ApiResponse<LinkVehicleResponseDto>> linkVehicle(@Valid @RequestBody LinkVehicleRequestDto vehicleInfo) {
-        Long userId = 5L;//TODO: 게아트웨이 header -유저 아이디 연결
+        Long userId = 1L;//TODO: 게아트웨이 header -유저 아이디 연결
         LinkVehicleResponseDto linkVehicle = userVehicleService.linkVehicle(userId, vehicleInfo);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -41,7 +41,7 @@ public class UserVehicleController {
     //-- 차량 연동 해제  --
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> unlinkVehicle() {
-        Long userId = 5L;//TODO: 게아트웨이 header -유저 아이디 연결
+        Long userId = 1L;//TODO: 게아트웨이 header -유저 아이디 연결
         userVehicleService.unlinkVehicle(userId);
         return ResponseEntity.ok(
                 ApiResponse.success("차량연동이 성공적으로 해제 되었습니다.")
