@@ -1,0 +1,61 @@
+services:
+  # MySQL 데이터베이스 컨테이너 정의(RDS 대체)
+#  mysql:
+#    image: mysql:8.0
+#    container_name: smooth-mysql
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+#      MYSQL_DATABASE: ${MYSQL_DATABASE:-smooth}
+#      MYSQL_USER: ${MYSQL_USER:-smooth}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-smooth}
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - mysql_data:/var/lib/mysql
+#    restart: unless-stopped
+
+  # Redis 캐시 컨테이너 정의
+  redis:
+    image: redis:7-alpine
+    container_name: smooth-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # 백엔드 애플리케이션 컨테이너 정의
+  backend:
+    # 도커 허브 이미지를 사용하도록 지정
+    #image: ${DOCKER_USERNAME}/${IMAGE_NAME:user-service}:${IMAGE_TAG:0.0.1}
+
+    # ECR 이미지를 사용하도록 지정
+    image: ${ECR_IMAGE_URI}
+    container_name: smooth-backend
+    ports:
+      - "8080:8080"
+    # MySQL과 Redis 컨테이너가 먼저 실행되도록 의존성 설정
+    depends_on:
+#      - mysql
+      - redis
+    # 환경 변수 설정
+    environment:
+      # application-docker.yml 파일을 사용하도록 지정
+      - spring.profiles.active=docker
+      # 데이터베이스 URL은 application-docker.yml에서 이미 설정되었으므로 여기서는 제거
+      - spring.data.redis.host=redis
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      # RDS 환경변수
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    restart: unless-stopped
+
+# 데이터 영속성을 위한 볼륨 정의
+volumes:
+#  mysql_data:
+  redis_data:

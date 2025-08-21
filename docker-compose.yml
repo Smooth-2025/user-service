@@ -1,13 +1,12 @@
-version: '3.8'
 services:
   mysql:
     image: mysql:8.0
     container_name: smooth-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: smooth
-      MYSQL_USER: smooth
-      MYSQL_PASSWORD: smooth
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-smooth}
+      MYSQL_USER: ${MYSQL_USER:-smooth}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-smooth}
     ports:
       - "3306:3306"
     volumes:
