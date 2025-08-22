@@ -75,7 +75,7 @@ pipeline {
                     discordSend description: "Jenkins Job: ${env.JOB_NAME}",
                         footer: discordFooter,
                         link: env.BUILD_URL,
-                        title: "Test Service Build Result",
+                        title: "User Service Build Result",
                         webhookURL: DISCORD_WEBHOOK_URL
                 }
             }
