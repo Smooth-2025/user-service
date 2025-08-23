@@ -13,7 +13,36 @@ public class RedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // JWT 블랙리스트 관리
+    // JTI 기반 Access Token 블랙리스트
+    public void addAccessTokenToBlacklist(String jti, long expirationTimeInSeconds) {
+        redisTemplate.opsForValue().set(
+                "blacklist:access:" + jti,
+                "blocked",
+                Duration.ofSeconds(expirationTimeInSeconds)
+        );
+    }
+
+    // JTI 기반 Refresh Token 블랙리스트
+    public void addRefreshTokenToBlacklist(String jti, long expirationTimeInSeconds) {
+        redisTemplate.opsForValue().set(
+                "blacklist:refresh:" + jti,
+                "blocked",
+                Duration.ofSeconds(expirationTimeInSeconds)
+        );
+    }
+
+    // Access Token 블랙리스트 확인
+    public boolean isAccessTokenBlacklisted(String jti) {
+        return redisTemplate.hasKey("blacklist:access:" + jti);
+    }
+
+    // Refresh Token 블랙리스트 확인
+    public boolean isRefreshTokenBlacklisted(String jti) {
+        return redisTemplate.hasKey("blacklist:refresh:" + jti);
+    }
+
+    // 기존 메소드 (호환성 유지 - 나중에 제거 예정)
+    @Deprecated
     public void addToBlacklist(String token, long expirationTimeInSeconds) {
         redisTemplate.opsForValue().set(
                 "blacklist:" + token,
@@ -22,11 +51,12 @@ public class RedisService {
         );
     }
 
+    @Deprecated
     public boolean isTokenBlacklisted(String token) {
         return redisTemplate.hasKey("blacklist:" + token);
     }
 
-    // 일반적인 캐시 작업
+    // 기존 일반 캐시 메소드들...
     public void setValue(String key, Object value, long timeoutInSeconds) {
         redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(timeoutInSeconds));
     }
@@ -43,7 +73,6 @@ public class RedisService {
         return redisTemplate.hasKey(key);
     }
 
-    // 문자열 전용 메서드 추가
     public void setStringValue(String key, String value, long timeoutInSeconds) {
         redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(timeoutInSeconds));
     }
