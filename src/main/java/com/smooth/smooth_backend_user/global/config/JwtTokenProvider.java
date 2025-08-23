@@ -2,58 +2,100 @@ package com.smooth.smooth_backend_user.global.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
-    private final long validityInMilliseconds;
+    private final long accessTokenValidityInMilliseconds;  // 15분
+    private final long refreshTokenValidityInMilliseconds; // 30일
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secret,
-                            @Value("${jwt.expiration}") long validityInMilliseconds) {
+                            @Value("${jwt.access-expiration:900000}") long accessTokenValidity,  // 15분 = 900000ms
+                            @Value("${jwt.refresh-expiration:1209600000}") long refreshTokenValidity) { // 2주
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
-        this.validityInMilliseconds = validityInMilliseconds;
+        this.accessTokenValidityInMilliseconds = accessTokenValidity;
+        this.refreshTokenValidityInMilliseconds = refreshTokenValidity;
     }
 
-    // JWT 토큰 생성
-    public String createToken(Long userId, String email) {
+    // Access Token 생성
+    public String createAccessToken(Long userId, String email) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
+        Date validity = new Date(now.getTime() + accessTokenValidityInMilliseconds);
+        String jti = UUID.randomUUID().toString();
 
         return Jwts.builder()
+                .setId(jti)
                 .setSubject(userId.toString())
                 .claim("email", email)
+                .claim("type", "access")
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // JWT 토큰에서 사용자 ID 추출
-    public Long getUserId(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+    // Refresh Token 생성
+    public String createRefreshToken(Long userId, String email) {
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshTokenValidityInMilliseconds);
+        String jti = UUID.randomUUID().toString(); // 토큰 고유 ID
 
+        return Jwts.builder()
+                .setId(jti)                           // JTI 추가
+                .setSubject(userId.toString())
+                .claim("email", email)
+                .claim("type", "refresh")             // 토큰 타입
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // 토큰에서 JTI 추출 (블랙리스트용)
+    public String getJti(String token) {
+        Claims claims = getClaims(token);
+        return claims.getId();
+    }
+
+    // 토큰 타입 확인
+    public String getTokenType(String token) {
+        Claims claims = getClaims(token);
+        return claims.get("type", String.class);
+    }
+
+    // 기존 메소드
+    public Long getUserId(String token) {
+        Claims claims = getClaims(token);
         return Long.valueOf(claims.getSubject());
     }
 
-    // JWT 토큰에서 이메일 추출
     public String getEmail(String token) {
-        Claims claims = Jwts.parserBuilder()
+        try {
+            Claims claims = getClaims(token);
+            String email = claims.get("email", String.class);
+            return email != null ? email : "";
+        } catch (Exception e) {
+            log.warn("Failed to extract email from token: {}", e.getMessage());
+            return "";
+        }
+    }
+
+    // Claims 추출 공통 메소드
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return claims.get("email", String.class);
     }
 
     // JWT 토큰 유효성 검증
@@ -71,12 +113,13 @@ public class JwtTokenProvider {
 
     // 토큰 만료 시간
     public long getExpirationTime(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-
+        Claims claims = getClaims(token);
         return claims.getExpiration().getTime();
+    }
+
+    // 기존 메소드 (호환성 유지) - 나중에 제거 예정
+    @Deprecated
+    public String createToken(Long userId, String email) {
+        return createAccessToken(userId, email);
     }
 }
