@@ -41,8 +41,15 @@ public class EmailVerificationService {
     private void validateSendLimit(String email) {
         String limitKey = SEND_LIMIT_PREFIX + email;
         String countStr = redisService.getStringValue(limitKey);
-        int count = countStr != null ? Integer.parseInt(countStr) : 0;
-
+        
+        // Redis 장애 시 (countStr == null이고 Redis가 정상이었다면 "0"이 반환됨)
+        if (countStr == null) {
+            log.warn("Redis 연결 불가 - 발송 제한 확인 불가: {}", email);
+            // Redis 장애 시에도 이메일 발송은 허용 (하지만 제한 기능은 동작하지 않음)
+            return;
+        }
+        
+        int count = Integer.parseInt(countStr);
         if (count >= MAX_SEND_COUNT) {
             log.warn("이메일 발송 횟수 초과: {} ({}회)", email, count);
             throw new BusinessException(UserErrorCode.EMAIL_SEND_LIMIT_EXCEEDED,
