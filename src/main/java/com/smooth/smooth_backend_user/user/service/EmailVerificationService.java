@@ -133,6 +133,14 @@ public class EmailVerificationService {
     public boolean isEmailVerified(String email) {
         String verifiedKey = VERIFIED_PREFIX + email;
         String verified = redisService.getStringValue(verifiedKey);
+        
+        // Redis 장애 시 (verified == null) 인증되지 않은 것으로 처리
+        // 보안상 Redis 연결 실패 시 인증을 허용하지 않음
+        if (verified == null) {
+            log.warn("이메일 인증 상태 확인 실패 (Redis 연결 실패 가능성): {}", email);
+            return false;
+        }
+        
         return "true".equals(verified);
     }
 
