@@ -19,6 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,6 +39,9 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisService redisService;
     private final EmailVerificationService emailVerificationService;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
 
     // Authorization 헤더에서 토큰 추출
     private String getTokenFromRequest(HttpServletRequest request) {
@@ -112,7 +116,7 @@ public class AuthController {
         // Refresh Token을 HttpOnly 쿠키로 설정
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(true);
+        refreshCookie.setSecure(cookieSecure);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(14 * 24 * 60 * 60); //14일
         refreshCookie.setAttribute("SameSite", "Strict");
@@ -141,9 +145,9 @@ public class AuthController {
         // Refresh Token을 HttpOnly 쿠키로 설정
         Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
         refreshCookie.setHttpOnly(true);        // JS 접근 불가
-        refreshCookie.setSecure(true);          // Https 에서만 동작 -> true
+        refreshCookie.setSecure(cookieSecure);  // 환경별 설정
         refreshCookie.setPath("/");             // 모든 경로에서 사용
-        refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 30일 (초 단위)
+        refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
         refreshCookie.setAttribute("SameSite", "Strict"); // CSRF 방어
 
         response.addCookie(refreshCookie);
@@ -193,7 +197,7 @@ public class AuthController {
         // 쿠키 삭제
         Cookie refreshCookie = new Cookie("refreshToken", "");
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);  // Https 에서만 동작 -> true
+        refreshCookie.setSecure(cookieSecure);  // 환경별 설정
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0);
         response.addCookie(refreshCookie);
@@ -282,7 +286,7 @@ public class AuthController {
         // 새로운 refresh token 을 쿠키로 설정
         Cookie newRefreshCookie = new Cookie("refreshToken", newRefreshToken);
         newRefreshCookie.setHttpOnly(true);
-        newRefreshCookie.setSecure(false);  // 개발환경
+        newRefreshCookie.setSecure(cookieSecure);  // 환경별 설정
         newRefreshCookie.setPath("/");
         newRefreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
         newRefreshCookie.setAttribute("SameSite", "Strict");

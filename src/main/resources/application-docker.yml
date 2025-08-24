@@ -30,6 +30,10 @@ jwt:
   access-expiration: 900000      # 15분
   refresh-expiration: 1209600000 # 2주
 
+app:
+  cookie:
+    secure: ${COOKIE_SECURE:true}  # HTTPS 환경 (배포용), 환경변수로 제어 가능
+
 logging:
   level:
     com.smooth.backend: ${LOG_LEVEL:DEBUG}

@@ -47,6 +47,10 @@ jwt:
   access-expiration: 900000      # 15분
   refresh-expiration: 1209600000 # 2주
 
+app:
+  cookie:
+    secure: false  # 기본값 (개발환경)
+
 logging:
   level:
     com.smooth.backend: ${LOG_LEVEL:DEBUG}
