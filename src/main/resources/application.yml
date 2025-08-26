@@ -1,7 +1,9 @@
+# 공통 설정 - 모든 환경에서 동일하게 사용
 server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  # 메일 기본 설정
   mail:
     host: smtp.gmail.com
     port: 587
@@ -14,12 +16,9 @@ spring:
           starttls:
             enable: true
 
+  # 데이터베이스 드라이버 및 HikariCP 설정
   datasource:
-    url: ${DATABASE_URL:jdbc:mysql://localhost:3306/smooth}
-    username: ${DATABASE_USERNAME:root}
-    password: ${DATABASE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -29,28 +28,22 @@ spring:
       validation-timeout: 5000
       connection-test-query: SELECT 1
 
+  # JPA 공통 설정
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: ${JPA_SHOW_SQL:true}
     properties:
       hibernate:
         format_sql: true
 
+  # 기본 시큐리티 설정
   security:
     user:
       name: admin
       password: admin
 
+# JWT 토큰 설정
 jwt:
   secret: ${JWT_SECRET}
   access-expiration: 900000      # 15분
   refresh-expiration: 1209600000 # 2주
-
-app:
-  cookie:
-    secure: false  # 기본값 (개발환경)
-
-logging:
-  level:
-    com.smooth.backend: ${LOG_LEVEL:DEBUG}
