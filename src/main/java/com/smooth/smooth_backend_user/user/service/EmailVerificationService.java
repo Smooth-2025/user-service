@@ -41,8 +41,15 @@ public class EmailVerificationService {
     private void validateSendLimit(String email) {
         String limitKey = SEND_LIMIT_PREFIX + email;
         String countStr = redisService.getStringValue(limitKey);
-        int count = countStr != null ? Integer.parseInt(countStr) : 0;
-
+        
+        // Redis 장애 시 (countStr == null이고 Redis가 정상이었다면 "0"이 반환됨)
+        if (countStr == null) {
+            log.warn("Redis 연결 불가 - 발송 제한 확인 불가: {}", email);
+            // Redis 장애 시에도 이메일 발송은 허용 (하지만 제한 기능은 동작하지 않음)
+            return;
+        }
+        
+        int count = Integer.parseInt(countStr);
         if (count >= MAX_SEND_COUNT) {
             log.warn("이메일 발송 횟수 초과: {} ({}회)", email, count);
             throw new BusinessException(UserErrorCode.EMAIL_SEND_LIMIT_EXCEEDED,
@@ -75,12 +82,15 @@ public class EmailVerificationService {
         // Redis에 인증코드 저장 (3분 만료)
         String redisKey = CODE_PREFIX + email;
         redisService.setStringValue(redisKey, verificationCode, EXPIRATION_MINUTES * 60);
+        
+        // Redis 저장 실패 시에도 이메일 발송은 진행
+        // (사용자가 인증코드를 받기는 하지만, 검증 시 문제가 될 수 있음)
 
         // 이메일 발송
         try {
             emailService.sendVerificationEmail(email, verificationCode);
 
-            // 발송 횟수 증가
+            // 발송 횟수 증가 (Redis 장애 시에도 시도)
             incrementSendCount(email);
 
             log.info("인증코드 발송 완료: {}", email);
@@ -96,8 +106,11 @@ public class EmailVerificationService {
         String storedCode = redisService.getStringValue(redisKey);
 
         if (storedCode == null) {
-            log.warn("인증코드 만료 또는 존재하지 않음: {}", email);
-            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED);
+            // Redis 장애와 실제 코드 만료를 구분하기 어려운 상황
+            // 보안상 Redis 장애 시에는 인증을 허용하지 않음
+            log.warn("인증코드 만료 또는 존재하지 않음 (Redis 연결 실패 가능성 포함): {}", email);
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED, 
+                "인증코드가 만료되었거나 시스템 장애입니다. 다시 시도해주세요.");
         }
 
         if (!storedCode.equals(inputCode)) {
@@ -105,10 +118,10 @@ public class EmailVerificationService {
             throw new BusinessException(UserErrorCode.VERIFICATION_CODE_MISMATCH);
         }
 
-        // 인증 성공 시 인증코드 삭제
+        // 인증 성공 시 인증코드 삭제 (Redis 장애 시에도 시도)
         redisService.deleteValue(redisKey);
 
-        // 인증 완료 표시 (회원가입 시까지 유지)
+        // 인증 완료 표시 (회원가입 시까지 유지) - Redis 장애 시에도 시도
         String verifiedKey = VERIFIED_PREFIX + email;
         redisService.setStringValue(verifiedKey, "true", 30 * 60); // 30분 유지
 
@@ -120,6 +133,14 @@ public class EmailVerificationService {
     public boolean isEmailVerified(String email) {
         String verifiedKey = VERIFIED_PREFIX + email;
         String verified = redisService.getStringValue(verifiedKey);
+        
+        // Redis 장애 시 (verified == null) 인증되지 않은 것으로 처리
+        // 보안상 Redis 연결 실패 시 인증을 허용하지 않음
+        if (verified == null) {
+            log.warn("이메일 인증 상태 확인 실패 (Redis 연결 실패 가능성): {}", email);
+            return false;
+        }
+        
         return "true".equals(verified);
     }
 

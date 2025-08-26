@@ -37,5 +37,9 @@ out/
 .vscode/
 
 .env
+.env.local
+
+src/main/resources/application-local.yml
+docker-compose.local.yml
 
 .DS_Store

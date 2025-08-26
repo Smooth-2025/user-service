@@ -32,12 +32,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
 
-            //redis 기반 블랙리스트 확인
-            if(!redisService.isTokenBlacklisted(token)) {
+            // JTI 기반 블랙리스트 확인
+            String jti = jwtTokenProvider.getJti(token);
+            String tokenType = jwtTokenProvider.getTokenType(token);
+
+            boolean isBlacklisted = false;
+            if ("access".equals(tokenType)) {
+                isBlacklisted = redisService.isAccessTokenBlacklisted(jti);
+            } else if ("refresh".equals(tokenType)) {
+                isBlacklisted = redisService.isRefreshTokenBlacklisted(jti);
+            }
+
+            if (!isBlacklisted) {
                 Long userId = jwtTokenProvider.getUserId(token);
                 String email = jwtTokenProvider.getEmail(token);
 
-                // Spring Security에 인증 정보 설정, String으로 변경
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userId.toString(), null, new ArrayList<>());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

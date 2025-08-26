@@ -1,0 +1,21 @@
+# Docker/배포 환경 설정
+spring:
+  # Docker 데이터베이스 설정 (컨테이너 환경)
+  datasource:
+    url: ${DATABASE_URL:jdbc:mysql://mysql:3306/smooth}
+    username: ${DATABASE_USERNAME:root}
+    password: ${DATABASE_PASSWORD:root}
+
+  # 배포환경 JPA 설정
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:false}  # 배포시 기본값을 false로
+
+# Docker 앱 설정
+app:
+  cookie:
+    secure: ${COOKIE_SECURE:true}  # HTTPS 환경 (배포용)
+
+# Docker 로깅 설정
+logging:
+  level:
+    com.smooth.backend: ${LOG_LEVEL:INFO}  # 배포시 기본값을 INFO로
