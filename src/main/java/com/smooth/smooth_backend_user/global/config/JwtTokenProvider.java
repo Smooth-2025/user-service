@@ -62,14 +62,28 @@ public class JwtTokenProvider {
 
     // 토큰에서 JTI 추출 (블랙리스트용)
     public String getJti(String token) {
-        Claims claims = getClaims(token);
-        return claims.getId();
+        try {
+            Claims claims = getClaims(token);
+            String jti = claims.getId();
+            // JTI가 없는 경우 토큰 자체를 JTI로 사용 (기존 토큰 호환성)
+            return jti != null ? jti : token.substring(token.length() - 10);
+        } catch (Exception e) {
+            log.warn("Failed to extract JTI from token: {}", e.getMessage());
+            return token.substring(token.length() - 10); // 토큰 마지막 10자리 사용
+        }
     }
 
     // 토큰 타입 확인
     public String getTokenType(String token) {
-        Claims claims = getClaims(token);
-        return claims.get("type", String.class);
+        try {
+            Claims claims = getClaims(token);
+            String type = claims.get("type", String.class);
+            // type이 없으면 access로 간주 (기존 토큰 호환성)
+            return type != null ? type : "access";
+        } catch (Exception e) {
+            log.warn("Failed to extract token type: {}", e.getMessage());
+            return "access"; // 기본값
+        }
     }
 
     // 기존 메소드
