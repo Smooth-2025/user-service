@@ -39,7 +39,17 @@ public enum UserErrorCode implements ErrorCode {
     // 16xx: 차량 관련
     VEHICLE_NOT_FOUND(HttpStatus.NOT_FOUND, 1601, "연동된 차량이 없습니다."),
     VEHICLE_LINK_CONFLICT(HttpStatus.CONFLICT, 1602, "이미 연동된 차량이 있습니다."),
-    VEHICLE_LINK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 1603, "차량 연동에 실패했습니다.");
+    VEHICLE_LINK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 1603, "차량 연동에 실패했습니다."),
+
+    // 17xx: 성향(Trait) 관련
+    INVALID_USER_ID(HttpStatus.BAD_REQUEST, 1700, "잘못된 사용자 ID입니다."),
+    TRAIT_NOT_FOUND(HttpStatus.NOT_FOUND, 1701, "운전자 성향 정보를 찾을 수 없습니다."),
+    TRAIT_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 1702, "성향 서비스를 일시적으로 사용할 수 없습니다."),
+
+    // 18xx: 응급정보 관련
+    EMERGENCY_INFO_NOT_AVAILABLE(HttpStatus.NOT_FOUND, 1801, "응급정보가 등록되지 않았습니다."),
+    EMERGENCY_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 1802, "응급정보 서비스를 일시적으로 사용할 수 없습니다.");
+
 
     private final HttpStatus httpStatus;
     private final Integer code;
