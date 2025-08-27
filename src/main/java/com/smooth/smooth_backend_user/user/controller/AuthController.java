@@ -210,12 +210,17 @@ public class AuthController {
     @DeleteMapping("/account")
     public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
+        }
+        
         String userIdStr = (String) auth.getPrincipal();
         Long userId = Long.valueOf(userIdStr);
 
         userService.deleteAccount(userId);
 
-        // 🔧 JTI 기반 블랙리스트로 변경
+        // JTI 기반 블랙리스트로 변경
         String token = getTokenFromRequest(request);
         if (token != null && jwtTokenProvider.validateToken(token)) {
             String jti = jwtTokenProvider.getJti(token);  // JTI 추출
