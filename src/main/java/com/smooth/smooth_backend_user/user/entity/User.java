@@ -47,6 +47,10 @@ public class User {
     @Column(name = "emergency_contact_3")
     private String emergencyContact3;
 
+    // 운전자 성향/캐릭터 타입
+    @Column(name = "character_type")
+    private String characterType;
+
     //이용약관
     @Column(name = "terms_of_service_agreed", nullable = false)
     private Boolean termsOfServiceAgreed = false;

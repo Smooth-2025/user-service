@@ -78,17 +78,23 @@ public class EmailVerificationService {
 
         // 인증코드 생성
         String verificationCode = generateVerificationCode();
+        log.info("인증코드 생성 완료: {} (5자리)", email);
 
         // Redis에 인증코드 저장 (3분 만료)
         String redisKey = CODE_PREFIX + email;
-        redisService.setStringValue(redisKey, verificationCode, EXPIRATION_MINUTES * 60);
-        
-        // Redis 저장 실패 시에도 이메일 발송은 진행
-        // (사용자가 인증코드를 받기는 하지만, 검증 시 문제가 될 수 있음)
+        try {
+            redisService.setStringValue(redisKey, verificationCode, EXPIRATION_MINUTES * 60);
+            log.debug("Redis에 인증코드 저장 완료: {} ({})", email, redisKey);
+        } catch (Exception e) {
+            log.error("Redis 연결 오류 - 인증코드 저장 실패: {}, Error: {}", email, e.getMessage());
+            throw new BusinessException(UserErrorCode.EMAIL_SEND_LIMIT_EXCEEDED, 
+                "시스템 오류로 인증코드 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
 
         // 이메일 발송
         try {
             emailService.sendVerificationEmail(email, verificationCode);
+            log.info("인증코드 이메일 발송 완료: {}", email);
 
             // 발송 횟수 증가 (Redis 장애 시에도 시도)
             incrementSendCount(email);
@@ -102,28 +108,62 @@ public class EmailVerificationService {
 
     // 인증코드 검증
     public boolean verifyCode(String email, String inputCode) {
+        // 입력값 정규화 (공백 제거, null 체크)
+        if (inputCode == null || inputCode.trim().isEmpty()) {
+            log.warn("빈 인증코드 입력: {}", email);
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_MISMATCH, "인증코드를 입력해주세요.");
+        }
+        
+        String normalizedInputCode = inputCode.trim();
+        
+        // 인증코드 형식 검증 (5자리 숫자)
+        if (!normalizedInputCode.matches("\\d{5}")) {
+            log.warn("잘못된 인증코드 형식: {} (입력: {})", email, normalizedInputCode);
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_MISMATCH, "인증코드는 5자리 숫자여야 합니다.");
+        }
+        
         String redisKey = CODE_PREFIX + email;
-        String storedCode = redisService.getStringValue(redisKey);
+        String storedCode = null;
+        
+        try {
+            storedCode = redisService.getStringValue(redisKey);
+            log.debug("Redis에서 인증코드 조회 시도: {} (저장된 코드 존재: {})", email, storedCode != null);
+        } catch (Exception e) {
+            log.error("Redis 연결 오류 - 인증코드 조회 실패: {}, Error: {}", email, e.getMessage());
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED, 
+                "시스템 오류로 인증이 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
 
         if (storedCode == null) {
-            // Redis 장애와 실제 코드 만료를 구분하기 어려운 상황
-            // 보안상 Redis 장애 시에는 인증을 허용하지 않음
-            log.warn("인증코드 만료 또는 존재하지 않음 (Redis 연결 실패 가능성 포함): {}", email);
+            log.warn("인증코드 만료 또는 존재하지 않음: {}", email);
             throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED, 
-                "인증코드가 만료되었거나 시스템 장애입니다. 다시 시도해주세요.");
+                "인증코드가 만료되었습니다. 새로운 인증코드를 요청해주세요.");
         }
 
-        if (!storedCode.equals(inputCode)) {
-            log.warn("인증코드 불일치: {}", email);
-            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_MISMATCH);
+        if (!storedCode.equals(normalizedInputCode)) {
+            log.warn("인증코드 불일치: {} (입력: {}, 저장: {})", email, normalizedInputCode, storedCode);
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_MISMATCH, "인증코드가 일치하지 않습니다.");
         }
 
-        // 인증 성공 시 인증코드 삭제 (Redis 장애 시에도 시도)
-        redisService.deleteValue(redisKey);
+        // 인증 성공 시 인증코드 삭제
+        try {
+            redisService.deleteValue(redisKey);
+            log.debug("인증코드 삭제 완료: {}", email);
+        } catch (Exception e) {
+            log.warn("Redis 연결 오류 - 인증코드 삭제 실패: {}, Error: {}", email, e.getMessage());
+            // 인증은 성공했으므로 계속 진행
+        }
 
-        // 인증 완료 표시 (회원가입 시까지 유지) - Redis 장애 시에도 시도
-        String verifiedKey = VERIFIED_PREFIX + email;
-        redisService.setStringValue(verifiedKey, "true", 30 * 60); // 30분 유지
+        // 인증 완료 표시 (회원가입 시까지 유지)
+        try {
+            String verifiedKey = VERIFIED_PREFIX + email;
+            redisService.setStringValue(verifiedKey, "true", 30 * 60); // 30분 유지
+            log.debug("이메일 인증 상태 저장 완료: {}", email);
+        } catch (Exception e) {
+            log.error("Redis 연결 오류 - 인증 상태 저장 실패: {}, Error: {}", email, e.getMessage());
+            throw new BusinessException(UserErrorCode.VERIFICATION_CODE_EXPIRED, 
+                "인증은 성공했지만 상태 저장에 실패했습니다. 다시 인증해주세요.");
+        }
 
         log.info("이메일 인증 성공: {}", email);
         return true;

@@ -8,6 +8,7 @@ import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
 import com.smooth.smooth_backend_user.user.repository.UserRepository;
+import com.smooth.smooth_backend_user.user.repository.UserVehicleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserVehicleRepository userVehicleRepository;
     private final PasswordEncoder passwordEncoder;
 
     private User createUserFromDto(RegisterRequestDto dto) {
@@ -140,6 +142,12 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
         try {
+            // UserVehicle이 있으면 먼저 삭제
+            if (user.getUserVehicle() != null) {
+                userVehicleRepository.delete(user.getUserVehicle());
+                log.info("사용자 차량 정보 삭제 완료: 사용자 ID {}", userId);
+            }
+            
             userRepository.delete(user);
             log.info("회원탈퇴 완료: 사용자 ID {}", userId);
         } catch (Exception e) {
