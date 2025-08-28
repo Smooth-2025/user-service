@@ -31,7 +31,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/users/auth")
 @RequiredArgsConstructor
 public class AuthController {
 

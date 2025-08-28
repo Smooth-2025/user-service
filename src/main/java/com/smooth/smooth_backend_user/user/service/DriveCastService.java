@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public class DriveCastService {
 
         return TraitsBulkResponse.builder()
                 .data(traitDataList)
-                .generatedAtUtc(Instant.now().toString())
+                .generatedAtUtc(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
                 .build();
     }
 
