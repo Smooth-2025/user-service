@@ -8,6 +8,7 @@ import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.user.service.UserVehicleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +16,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
-@RequestMapping(value = "/api/vehicle", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/api/users/vehicle", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class UserVehicleController {
 
@@ -36,8 +38,9 @@ public class UserVehicleController {
     @GetMapping
     public ResponseEntity<ApiResponse<LinkVehicleResponseDto>> getRegisteredVehicle() {
         Long userId = getAuthenticatedUserId();
-
+        log.debug("Getting vehicle info for user: {}", userId);
         LinkVehicleResponseDto vehicleInfo = userVehicleService.getRegisteredVehicle(userId);
+        log.info("Vehicle info retrieved: {}", vehicleInfo);
         return ResponseEntity.ok(
                 ApiResponse.success("사용자 차량 정보 조회 성공", vehicleInfo)
         );
