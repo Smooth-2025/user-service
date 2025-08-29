@@ -119,7 +119,7 @@ public class AuthController {
         refreshCookie.setSecure(cookieSecure);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(14 * 24 * 60 * 60); //14일
-        refreshCookie.setAttribute("SameSite", "Strict");
+        refreshCookie.setAttribute("SameSite", "None");
 
         response.addCookie(refreshCookie);
 
@@ -148,7 +148,7 @@ public class AuthController {
         refreshCookie.setSecure(cookieSecure);  // 환경별 설정
         refreshCookie.setPath("/");             // 모든 경로에서 사용
         refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
-        refreshCookie.setAttribute("SameSite", "Strict"); // CSRF 방어
+        refreshCookie.setAttribute("SameSite", "None"); // CSRF 방어
 
         response.addCookie(refreshCookie);
 
@@ -319,7 +319,7 @@ public class AuthController {
         newRefreshCookie.setSecure(cookieSecure);  // 환경별 설정
         newRefreshCookie.setPath("/");
         newRefreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
-        newRefreshCookie.setAttribute("SameSite", "Strict");
+        newRefreshCookie.setAttribute("SameSite", "None");
         response.addCookie(newRefreshCookie);
 
         // 응답 데이터 생성
