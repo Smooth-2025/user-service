@@ -5,6 +5,13 @@ spring:
     url: ${DATABASE_URL:jdbc:mysql://mysql:3306/smooth}
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:root}
+  
+  # Redis 설정 (Docker 환경)
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
 
   # 배포환경 JPA 설정
   jpa:

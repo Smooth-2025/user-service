@@ -208,7 +208,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/account")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletRequest request, HttpServletResponse response) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
@@ -229,6 +229,31 @@ public class AuthController {
                 redisService.addAccessTokenToBlacklist(jti, remainingTime / 1000);  // JTI 기반
             }
         }
+        // Refresh Token도 블랙리스트 추가하고 쿠키 삭제
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    String refreshToken = cookie.getValue();
+                    if (jwtTokenProvider.validateToken(refreshToken)) {
+                        String refreshJti = jwtTokenProvider.getJti(refreshToken);
+                        long remainingTime = jwtTokenProvider.getExpirationTime(refreshToken) - System.currentTimeMillis();
+                        if (remainingTime > 0) {
+                            redisService.addRefreshTokenToBlacklist(refreshJti, remainingTime / 1000);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // 쿠키 삭제
+        Cookie refreshCookie = new Cookie("refreshToken", "");
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(cookieSecure);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);  // 즉시 삭제
+        response.addCookie(refreshCookie);
 
         return ResponseEntity.ok(
                 ApiResponse.success("회원탈퇴가 완료되었습니다.")
