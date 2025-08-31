@@ -5,6 +5,7 @@ import com.smooth.smooth_backend_user.user.dto.request.UpdateEmergencyInfoReques
 import com.smooth.smooth_backend_user.user.dto.response.UserProfileResponseDto;
 import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
+import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
 import com.smooth.smooth_backend_user.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,17 +15,20 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users/profile")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
 
-    // 현재 로그인한 사용자 ID 가져오는 헬퍼 메서드
+    // 현재 로그인한 사용자 ID 가져오는 헬퍼 메서드 (Gateway 헤더 기반)
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String userIdStr = (String) authentication.getPrincipal();
-        return Long.valueOf(userIdStr);
+        if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
+            GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
+            return userDetails.getUserId();
+        }
+        throw new RuntimeException("인증되지 않은 사용자입니다.");
     }
 
     // 회원 정보 조회
