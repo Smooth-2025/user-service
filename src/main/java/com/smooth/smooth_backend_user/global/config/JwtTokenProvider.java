@@ -1,7 +1,6 @@
 package com.smooth.smooth_backend_user.global.config;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -68,5 +67,39 @@ public class JwtTokenProvider {
 
     public long getRefreshTokenExpirationTime() {
         return refreshTokenValidityInMilliseconds;
+    }
+
+    // Refresh Token 검증 및 사용자 정보 추출
+    public Claims validateRefreshToken(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            // refresh token 타입 검증
+            if (!"refresh".equals(claims.get("type"))) {
+                throw new JwtException("Invalid token type");
+            }
+            
+            return claims;
+        } catch (ExpiredJwtException e) {
+            log.error("Refresh token expired: {}", e.getMessage());
+            throw new JwtException("Refresh token expired");
+        } catch (JwtException e) {
+            log.error("Invalid refresh token: {}", e.getMessage());
+            throw new JwtException("Invalid refresh token");
+        }
+    }
+
+    // 토큰에서 사용자 ID 추출
+    public Long getUserIdFromToken(Claims claims) {
+        return Long.valueOf(claims.getSubject());
+    }
+
+    // 토큰에서 이메일 추출
+    public String getEmailFromToken(Claims claims) {
+        return claims.get("email", String.class);
     }
 }
