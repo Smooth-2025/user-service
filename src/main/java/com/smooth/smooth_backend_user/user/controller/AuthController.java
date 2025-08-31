@@ -15,6 +15,7 @@ import com.smooth.smooth_backend_user.global.config.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +40,31 @@ public class AuthController {
 
     @Value("${app.cookie.secure:false}")
     private boolean cookieSecure;
+
+    // 쿠키에서 refresh token 추출하는 헬퍼 메서드
+    private String getRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
+        
+        for (Cookie cookie : request.getCookies()) {
+            if ("refreshToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    // 쿠키에 refresh token 설정하는 헬퍼 메서드
+    private void setRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
+        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(cookieSecure);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
+        refreshCookie.setAttribute("SameSite", "None");
+        response.addCookie(refreshCookie);
+    }
 
 
     @PostMapping("/send-verification")
@@ -98,14 +124,7 @@ public class AuthController {
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
 
         // Refresh Token을 HttpOnly 쿠키로 설정
-        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(cookieSecure);
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
-        refreshCookie.setAttribute("SameSite", "None");
-
-        response.addCookie(refreshCookie);
+        setRefreshTokenCookie(response, refreshToken);
 
         RegisterResponseDto registerResponse = RegisterResponseDto.success(
                 user.getId(),
@@ -128,14 +147,7 @@ public class AuthController {
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
 
         // Refresh Token을 HttpOnly 쿠키로 설정
-        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(cookieSecure);
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
-        refreshCookie.setAttribute("SameSite", "None");
-
-        response.addCookie(refreshCookie);
+        setRefreshTokenCookie(response, refreshToken);
 
         // Access Token을 JSON으로 응답
         LoginResponseDto loginResponse = LoginResponseDto.success(
@@ -154,6 +166,48 @@ public class AuthController {
         return ResponseEntity.ok(
                 ApiResponse.success("로그아웃이 완료되었습니다.")
         );
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<RefreshTokenResponseDto>> refreshToken(
+            HttpServletRequest request, HttpServletResponse response) {
+        
+        // 쿠키에서 refresh token 추출
+        String refreshToken = getRefreshTokenFromCookie(request);
+        if (refreshToken == null) {
+            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "Refresh token이 없습니다.");
+        }
+
+        try {
+            // refresh token 검증
+            Claims claims = jwtTokenProvider.validateRefreshToken(refreshToken);
+            Long userId = jwtTokenProvider.getUserIdFromToken(claims);
+            String email = jwtTokenProvider.getEmailFromToken(claims);
+
+            // 사용자 존재 여부 확인
+            User user = userService.findById(userId);
+            
+            // 새로운 토큰들 생성
+            String newAccessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail());
+            String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getEmail());
+
+            // 새로운 refresh token을 쿠키에 설정
+            setRefreshTokenCookie(response, newRefreshToken);
+
+            // 응답 생성
+            RefreshTokenResponseDto refreshResponse = RefreshTokenResponseDto.success(
+                    newAccessToken,
+                    jwtTokenProvider.getAccessTokenExpirationTime() / 1000 // 초 단위로 변환
+            );
+
+            return ResponseEntity.ok(
+                    ApiResponse.success("토큰이 재발급되었습니다.", refreshResponse)
+            );
+
+        } catch (Exception e) {
+            log.error("Token refresh failed: {}", e.getMessage());
+            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "유효하지 않은 refresh token입니다.");
+        }
     }
 
     @DeleteMapping("/account")
