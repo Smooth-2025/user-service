@@ -24,7 +24,7 @@ public class User {
     private String email;
 
     @Column(unique = true)
-    private String username; // 관리자용 간단 아이디
+    private String loginId; // 관리자용 간단 아이디
 
     @Column(nullable = false)
     private String password;
