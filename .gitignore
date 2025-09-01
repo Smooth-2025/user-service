@@ -46,3 +46,4 @@ docker-compose.local.yml
 
 application.yml
 application-prod.yml
+/src/main/resources/data.sql
