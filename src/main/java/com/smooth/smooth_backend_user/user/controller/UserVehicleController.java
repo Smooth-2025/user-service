@@ -6,6 +6,7 @@ import com.smooth.smooth_backend_user.user.dto.response.LinkVehicleResponseDto;
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.user.service.UserVehicleService;
+import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +27,11 @@ public class UserVehicleController {
 
     private Long getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
+        if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
+            GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
+            return userDetails.getUserId();
         }
-
-        String userIdStr = (String) authentication.getPrincipal();
-        return Long.valueOf(userIdStr);
+        throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
     }
     //-- 연동 차량 조회 --
     @GetMapping
