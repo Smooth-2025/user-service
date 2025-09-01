@@ -7,6 +7,8 @@ import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
 import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
 import com.smooth.smooth_backend_user.user.service.UserService;
+import com.smooth.smooth_backend_user.global.exception.BusinessException;
+import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,7 +30,7 @@ public class UserController {
             GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
             return userDetails.getUserId();
         }
-        throw new RuntimeException("인증되지 않은 사용자입니다.");
+        throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
     }
 
     // 회원 정보 조회

@@ -12,6 +12,7 @@ import com.smooth.smooth_backend_user.global.exception.BusinessException;
 import com.smooth.smooth_backend_user.user.service.EmailVerificationService;
 import com.smooth.smooth_backend_user.user.service.UserService;
 import com.smooth.smooth_backend_user.global.config.JwtTokenProvider;
+import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import com.smooth.smooth_backend_user.global.auth.GatewayAuthenticationHelper;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,6 +67,16 @@ public class AuthController {
         refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
         refreshCookie.setAttribute("SameSite", "None");
         response.addCookie(refreshCookie);
+    }
+
+    // 현재 인증된 사용자 ID 가져오는 헬퍼 메서드
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
+            GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
+            return userDetails.getUserId();
+        }
+        throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
     }
 
 
@@ -211,13 +224,8 @@ public class AuthController {
     }
 
     @DeleteMapping("/account")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletRequest request) {
-        Long userId = gatewayAuthHelper.getUserIdFromHeader(request);
-        
-        if (userId == null) {
-            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
-        }
-
+    public ResponseEntity<ApiResponse<Void>> deleteAccount() {
+        Long userId = getCurrentUserId();
         userService.deleteAccount(userId);
 
         return ResponseEntity.ok(
