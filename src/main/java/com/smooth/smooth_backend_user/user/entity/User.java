@@ -23,8 +23,15 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(unique = true)
+    private String username; // 관리자용 간단 아이디
+
     @Column(nullable = false)
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.USER; // 기본값: 일반 사용자
 
     @Column(nullable = false)
     private String name;
