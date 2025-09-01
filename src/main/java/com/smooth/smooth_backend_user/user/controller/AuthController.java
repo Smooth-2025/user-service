@@ -26,6 +26,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -76,6 +78,21 @@ public class AuthController {
             GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
             return userDetails.getUserId();
         }
+        
+        // Fallback: HTTP 헤더에서 직접 읽기
+        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        HttpServletRequest request = attr.getRequest();
+        String userIdHeader = request.getHeader("X-User-Id");
+        String authenticatedHeader = request.getHeader("X-Authenticated");
+        
+        if (userIdHeader != null && "true".equals(authenticatedHeader)) {
+            try {
+                return Long.valueOf(userIdHeader);
+            } catch (NumberFormatException e) {
+                log.error("Invalid userId format in header: {}", userIdHeader);
+            }
+        }
+        
         throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
     }
 
@@ -221,15 +238,5 @@ public class AuthController {
             log.error("Token refresh failed: {}", e.getMessage());
             throw new BusinessException(UserErrorCode.INVALID_TOKEN, "유효하지 않은 refresh token입니다.");
         }
-    }
-
-    @DeleteMapping("/account")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount() {
-        Long userId = getCurrentUserId();
-        userService.deleteAccount(userId);
-
-        return ResponseEntity.ok(
-                ApiResponse.success("회원탈퇴가 완료되었습니다.")
-        );
     }
 }
