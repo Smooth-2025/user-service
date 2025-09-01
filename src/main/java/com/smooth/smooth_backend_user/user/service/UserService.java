@@ -94,8 +94,8 @@ public class UserService {
 
     // 관리자 로그인
     public User adminLogin(AdminLoginRequestDto dto) {
-        // username으로 관리자 계정 조회
-        User user = userRepository.findByUsername(dto.getLoginId())
+        // loginId으로 관리자 계정 조회
+        User user = userRepository.findByLoginId(dto.getLoginId())
                 .orElseThrow(() -> new BusinessException(UserErrorCode.INVALID_CREDENTIALS));
 
         // 관리자 권한 확인
@@ -108,7 +108,7 @@ public class UserService {
             throw new BusinessException(UserErrorCode.INVALID_CREDENTIALS);
         }
 
-        log.info("관리자 로그인 성공: {}", user.getUsername());
+        log.info("관리자 로그인 성공: {}", user.getLoginId());
         return user;
     }
 
