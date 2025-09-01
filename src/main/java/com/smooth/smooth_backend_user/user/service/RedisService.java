@@ -6,7 +6,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -15,70 +14,6 @@ public class RedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // JTI 기반 Access Token 블랙리스트
-    public void addAccessTokenToBlacklist(String jti, long expirationTimeInSeconds) {
-        try {
-            redisTemplate.opsForValue().set(
-                    "blacklist:access:" + jti,
-                    "blocked",
-                    Duration.ofSeconds(expirationTimeInSeconds)
-            );
-            log.debug("Access Token 블랙리스트 등록 완료: JTI={}", jti);
-        } catch (Exception e) {
-            log.error("Redis 연결 실패 - Access Token 블랙리스트 등록 실패: JTI={}, Error={}", jti, e.getMessage());
-            // Redis 장애 시에도 로그아웃 프로세스는 계속 진행 (사용자 경험 우선)
-        }
-    }
-
-    // JTI 기반 Refresh Token 블랙리스트
-    public void addRefreshTokenToBlacklist(String jti, long expirationTimeInSeconds) {
-        try {
-            redisTemplate.opsForValue().set(
-                    "blacklist:refresh:" + jti,
-                    "blocked",
-                    Duration.ofSeconds(expirationTimeInSeconds)
-            );
-            log.debug("Refresh Token 블랙리스트 등록 완료: JTI={}", jti);
-        } catch (Exception e) {
-            log.error("Redis 연결 실패 - Refresh Token 블랙리스트 등록 실패: JTI={}, Error={}", jti, e.getMessage());
-            // Redis 장애 시에도 로그아웃 프로세스는 계속 진행 (사용자 경험 우선)
-        }
-    }
-
-    // Access Token 블랙리스트 확인
-    public boolean isAccessTokenBlacklisted(String jti) {
-        try {
-            return redisTemplate.hasKey("blacklist:access:" + jti);
-        } catch (Exception e) {
-            log.warn("Redis 연결 실패 - Access Token 블랙리스트 확인 스킵: JTI={}, Error={}", jti, e.getMessage());
-            return false; // Redis 장애 시 토큰 허용 (가용성 우선)
-        }
-    }
-
-    // Refresh Token 블랙리스트 확인
-    public boolean isRefreshTokenBlacklisted(String jti) {
-        try {
-            return redisTemplate.hasKey("blacklist:refresh:" + jti);
-        } catch (Exception e) {
-            log.warn("Redis 연결 실패 - Refresh Token 블랙리스트 확인 스킵: JTI={}, Error={}", jti, e.getMessage());
-            return false; // Redis 장애 시 토큰 허용 (가용성 우선)
-        }
-    }
-
-    // 기존 메소드 (호환성 유지 - 나중에 제거 예정)
-    @Deprecated
-    public void addToBlacklist(String token, long expirationTimeInSeconds) {
-        redisTemplate.opsForValue().set(
-                "blacklist:" + token,
-                "blocked",
-                Duration.ofSeconds(expirationTimeInSeconds)
-        );
-    }
-
-    @Deprecated
-    public boolean isTokenBlacklisted(String token) {
-        return redisTemplate.hasKey("blacklist:" + token);
-    }
 
     // 일반 캐시 메소드들 (Redis 장애 대응 포함)
     public void setValue(String key, Object value, long timeoutInSeconds) {
