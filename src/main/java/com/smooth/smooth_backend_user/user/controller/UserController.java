@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 @RestController
@@ -27,6 +30,9 @@ import jakarta.servlet.http.HttpServletRequest;
 public class UserController {
 
     private final UserService userService;
+
+    @Value("${app.cookie.secure:false}")
+    private boolean cookieSecure;
 
     // 현재 로그인한 사용자 ID 가져오는 헬퍼 메서드 (Gateway 헤더 기반)
     private Long getCurrentUserId() {
@@ -51,6 +57,18 @@ public class UserController {
         }
         
         throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
+    }
+
+    // 리프레시 토큰 쿠키 삭제하는 헬퍼 메서드
+    private void clearRefreshTokenCookie(HttpServletResponse response) {
+        Cookie refreshCookie = new Cookie("refreshToken", null);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(cookieSecure);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0); // 즉시 만료
+        refreshCookie.setAttribute("SameSite", "None");
+        response.addCookie(refreshCookie);
+        log.info("리프레시 토큰 쿠키 삭제 완료");
     }
 
     // 회원 정보 조회
@@ -112,12 +130,18 @@ public class UserController {
 
     // 회원탈퇴
     @DeleteMapping("/account")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount() {
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletResponse response) {
         Long userId = getCurrentUserId();
+        
+        // 회원 정보 삭제
         userService.deleteAccount(userId);
-
+        
+        // 리프레시 토큰 쿠키 삭제
+        clearRefreshTokenCookie(response);
+        
+        log.info("회원탈퇴 완료 - 사용자 ID: {}", userId);
         return ResponseEntity.ok(
-                ApiResponse.success("회원탈퇴가 완료되었습니다.")
+                ApiResponse.success("회원탈퇴가 완료되었습니다. 모든 인증 토큰이 무효화되었습니다.")
         );
     }
 
