@@ -21,6 +21,7 @@ public enum UserErrorCode implements ErrorCode {
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, 1201, "회원정보가 일치하지 않습니다."),
     CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, 1202, "현재 비밀번호가 일치하지 않습니다."),
     PASSWORD_CONFIRMATION_MISMATCH(HttpStatus.BAD_REQUEST, 1203, "새 비밀번호가 일치하지 않습니다."),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, 1204, "접근 권한이 없습니다."),
 
     // 13xx: 이메일/인증 관련
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, 1301, "이미 존재하는 이메일입니다."),
