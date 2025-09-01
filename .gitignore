@@ -43,3 +43,6 @@ src/main/resources/application-local.yml
 docker-compose.local.yml
 
 .DS_Store
+
+application.yml
+application-prod.yml
