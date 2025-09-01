@@ -4,7 +4,9 @@ import com.smooth.smooth_backend_user.user.dto.request.ChangePasswordRequestDto;
 import com.smooth.smooth_backend_user.user.dto.request.LoginRequestDto;
 import com.smooth.smooth_backend_user.user.dto.request.RegisterRequestDto;
 import com.smooth.smooth_backend_user.user.dto.request.UpdateEmergencyInfoRequestDto;
+import com.smooth.smooth_backend_user.user.dto.request.AdminLoginRequestDto;
 import com.smooth.smooth_backend_user.user.entity.User;
+import com.smooth.smooth_backend_user.user.entity.UserRole;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
 import com.smooth.smooth_backend_user.user.repository.UserRepository;
@@ -87,6 +89,26 @@ public class UserService {
             throw new BusinessException(UserErrorCode.INVALID_CREDENTIALS);
         }
 
+        return user;
+    }
+
+    // 관리자 로그인
+    public User adminLogin(AdminLoginRequestDto dto) {
+        // username으로 관리자 계정 조회
+        User user = userRepository.findByUsername(dto.getLoginId())
+                .orElseThrow(() -> new BusinessException(UserErrorCode.INVALID_CREDENTIALS));
+
+        // 관리자 권한 확인
+        if (user.getRole() != UserRole.ADMIN) {
+            throw new BusinessException(UserErrorCode.ACCESS_DENIED, "관리자 권한이 필요합니다.");
+        }
+
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+            throw new BusinessException(UserErrorCode.INVALID_CREDENTIALS);
+        }
+
+        log.info("관리자 로그인 성공: {}", user.getUsername());
         return user;
     }
 
