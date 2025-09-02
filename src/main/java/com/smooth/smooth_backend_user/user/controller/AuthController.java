@@ -93,7 +93,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletResponse response) {
         authService.logout(response);
         return ResponseEntity.ok(
-                ApiResponse.success("로그아웃이 완료되었습니다. 클라이언트에서 액세스 토큰을 삭제해 주세요.")
+                ApiResponse.success("로그아웃이 완료되었습니다.")
         );
     }
 
@@ -124,6 +124,14 @@ public class AuthController {
         AdminRefreshTokenResponseDto result = authService.adminRefreshToken(request, response);
         return ResponseEntity.ok(
                 ApiResponse.success("관리자 토큰 재발급 완료", result)
+        );
+    }
+
+    @PostMapping("/admin-logout")
+    public ResponseEntity<ApiResponse<Void>> adminLogout(HttpServletResponse response) {
+        authService.logout(response);
+        return ResponseEntity.ok(
+                ApiResponse.success("관리자 로그아웃이 완료되었습니다.")
         );
     }
 }
