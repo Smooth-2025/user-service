@@ -6,7 +6,6 @@ import com.smooth.smooth_backend_user.user.client.dto.UserTraitResponse;
 import com.smooth.smooth_backend_user.user.service.DriveCastService;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
-import com.smooth.smooth_backend_user.global.auth.InternalApiAuthenticationHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 public class InternalController {
 
     private final DriveCastService driveCastService;
-    private final InternalApiAuthenticationHelper internalAuthHelper;
 
     // 운전자 성향 벌크 조회 (웹서비스-주행페이지)
     // DriveCast → User Service
@@ -28,11 +26,6 @@ public class InternalController {
     public ResponseEntity<?> getTraitsBulk(
             @RequestParam(defaultValue = "true") Boolean hasCharacter,
             HttpServletRequest request) {
-
-        // Internal API 인증 확인
-        if (!internalAuthHelper.isValidInternalRequest(request)) {
-            return ResponseEntity.status(401).body(createErrorResponse("UNAUTHORIZED", "Unauthorized access to internal API"));
-        }
 
         log.info("벌크 성향 조회 API 호출: hasCharacter={}", hasCharacter);
 
@@ -51,12 +44,6 @@ public class InternalController {
     // DriveCast → User Service
     @GetMapping("/traits/{userId}")
     public ResponseEntity<?> getUserTrait(@PathVariable String userId, HttpServletRequest request) {
-
-        // Internal API 인증 확인
-        if (!internalAuthHelper.isValidInternalRequest(request)) {
-            return ResponseEntity.status(401).body(createErrorResponse("UNAUTHORIZED", "Unauthorized access to internal API"));
-        }
-
         log.info("단건 성향 조회 API 호출: userId={}", userId);
 
         try {
@@ -85,11 +72,6 @@ public class InternalController {
     // DriveCast → User Service
     @GetMapping("/users/{userId}/emergency-info")
     public ResponseEntity<?> getEmergencyInfo(@PathVariable String userId, HttpServletRequest request) {
-
-        // Internal API 인증 확인
-        if (!internalAuthHelper.isValidInternalRequest(request)) {
-            return ResponseEntity.status(401).body(createErrorResponse("UNAUTHORIZED", "Unauthorized access to internal API"));
-        }
 
         log.info("응급정보 조회 API 호출: userId={}", userId);
 
