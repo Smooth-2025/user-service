@@ -7,6 +7,7 @@ import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
 import com.smooth.smooth_backend_user.global.auth.AuthenticationUtils;
 import com.smooth.smooth_backend_user.user.service.UserService;
+import com.smooth.smooth_backend_user.global.util.CookieUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -23,22 +24,10 @@ import org.springframework.beans.factory.annotation.Value;
 public class UserController {
 
     private final UserService userService;
-
-    @Value("${app.cookie.secure:false}")
-    private boolean cookieSecure;
+    private final CookieUtils cookieUtils;
 
 
-    // 리프레시 토큰 쿠키 삭제하는 헬퍼 메서드
-    private void clearRefreshTokenCookie(HttpServletResponse response) {
-        Cookie refreshCookie = new Cookie("refreshToken", null);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(cookieSecure);
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(0); // 즉시 만료
-        refreshCookie.setAttribute("SameSite", "None");
-        response.addCookie(refreshCookie);
-        log.info("리프레시 토큰 쿠키 삭제 완료");
-    }
+
 
     // 회원 정보 조회
     @GetMapping("/profile")
@@ -106,7 +95,7 @@ public class UserController {
         userService.deleteAccount(userId);
         
         // 리프레시 토큰 쿠키 삭제
-        clearRefreshTokenCookie(response);
+        cookieUtils.clearRefreshTokenCookie(response);
         
         log.info("회원탈퇴 완료 - 사용자 ID: {}", userId);
         return ResponseEntity.ok(
