@@ -66,6 +66,9 @@ public class AuthService {
         cookieUtils.setRefreshTokenCookie(response, refreshToken);
 
         log.info("로그인 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), user.getEmail());
+        log.info("액세스 토큰 만료 시간: {}ms, 리프레시 토큰 만료 시간: {}ms", 
+                jwtTokenProvider.getAccessTokenExpirationTime(), 
+                jwtTokenProvider.getRefreshTokenExpirationTime());
 
         return LoginResponseDto.success(
                 user.getId(),
@@ -100,13 +103,16 @@ public class AuthService {
         // 쿠키에서 refresh token 추출
         String refreshToken = cookieUtils.getRefreshTokenFromCookie(request);
         if (refreshToken == null) {
+            log.error("리프레시 토큰 재발급 실패: 쿠키에서 리프레시 토큰을 찾을 수 없음");
             throw new BusinessException(UserErrorCode.INVALID_TOKEN, "Refresh token이 없습니다.");
         }
 
         try {
             // refresh token 검증
+            log.info("리프레시 토큰 검증 시작 - 토큰 길이: {}", refreshToken.length());
             Claims claims = jwtTokenProvider.validateRefreshToken(refreshToken);
             Long userId = jwtTokenProvider.getUserIdFromToken(claims);
+            log.info("리프레시 토큰 검증 성공 - 사용자 ID: {}", userId);
 
             // 사용자 존재 여부 확인
             User user = userService.findById(userId);
