@@ -5,6 +5,7 @@ import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import com.smooth.smooth_backend_user.user.entity.UserRole;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -43,6 +44,27 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    // Access Token 생성 (역할별)
+    public String createAccessToken(Long userId, String email, UserRole role) {
+        Date now = new Date();
+        long validity = (role == UserRole.ADMIN) ? 
+            3600000L :                          // 관리자: 60분
+            accessTokenValidityInMilliseconds;   // 일반사용자: 15분
+        Date expirationDate = new Date(now.getTime() + validity);
+        String jti = UUID.randomUUID().toString();
+
+        return Jwts.builder()
+                .setId(jti)
+                .setSubject(userId.toString())
+                .claim("email", email)
+                .claim("role", role.name())
+                .claim("type", "access")
+                .setIssuedAt(now)
+                .setExpiration(expirationDate)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     // Refresh Token 생성
     public String createRefreshToken(Long userId, String email) {
         Date now = new Date();
@@ -56,6 +78,27 @@ public class JwtTokenProvider {
                 .claim("type", "refresh")
                 .setIssuedAt(now)
                 .setExpiration(validity)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // Refresh Token 생성 (역할별)
+    public String createRefreshToken(Long userId, String email, UserRole role) {
+        Date now = new Date();
+        long validity = (role == UserRole.ADMIN) ? 
+            43200000L :                          // 관리자: 12시간 = 43200000ms
+            refreshTokenValidityInMilliseconds;  // 일반사용자: 2주
+        Date expirationDate = new Date(now.getTime() + validity);
+        String jti = UUID.randomUUID().toString();
+
+        return Jwts.builder()
+                .setId(jti)
+                .setSubject(userId.toString())
+                .claim("email", email)
+                .claim("role", role.name())
+                .claim("type", "refresh")
+                .setIssuedAt(now)
+                .setExpiration(expirationDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -101,5 +144,17 @@ public class JwtTokenProvider {
     // 토큰에서 이메일 추출
     public String getEmailFromToken(Claims claims) {
         return claims.get("email", String.class);
+    }
+
+    // 리프레시 토큰의 남은 시간 확인 (밀리초)
+    public long getRemainingTimeFromToken(Claims claims) {
+        Date expiration = claims.getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    // 리프레시 토큰 재발급이 필요한지 확인 (10분 = 600000ms 미만일 때)
+    public boolean needsRefreshTokenRenewal(Claims claims) {
+        long remainingTime = getRemainingTimeFromToken(claims);
+        return remainingTime <= 600000; // 10분
     }
 }
