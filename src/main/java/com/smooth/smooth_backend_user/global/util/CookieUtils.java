@@ -50,7 +50,13 @@ public class CookieUtils {
         refreshCookie.setSecure(cookieSecure);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(maxAge);
-        refreshCookie.setAttribute("SameSite", "None");
+        if (cookieSecure) {
+            // 운영/스테이징: HTTPS
+            refreshCookie.setAttribute("SameSite", "None"); // cross-site 허용
+        } else {
+            // 로컬: HTTP 개발 환경
+            refreshCookie.setAttribute("SameSite", "Lax");  // cross-site 차단, 동일사이트 내 전송
+        }
         response.addCookie(refreshCookie);
         
         log.debug("리프레시 토큰 쿠키 설정 완료 - maxAge: {}초", maxAge);
@@ -63,7 +69,13 @@ public class CookieUtils {
         refreshCookie.setSecure(cookieSecure);
         refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0); // 즉시 만료
-        refreshCookie.setAttribute("SameSite", "None");
+        if (cookieSecure) {
+            // 운영/스테이징: HTTPS
+            refreshCookie.setAttribute("SameSite", "None"); // cross-site 허용
+        } else {
+            // 로컬: HTTP 개발 환경
+            refreshCookie.setAttribute("SameSite", "Lax");  // cross-site 차단, 동일사이트 내 전송
+        }
         response.addCookie(refreshCookie);
         
         log.info("리프레시 토큰 쿠키 삭제 완료");
