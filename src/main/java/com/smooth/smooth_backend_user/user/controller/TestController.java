@@ -2,13 +2,9 @@ package com.smooth.smooth_backend_user.user.controller;
 
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
 import com.smooth.smooth_backend_user.user.service.RedisService;
-import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
-import com.smooth.smooth_backend_user.global.exception.BusinessException;
-import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
+import com.smooth.smooth_backend_user.global.auth.AuthenticationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,19 +19,10 @@ public class TestController {
 
     private final RedisService redisService;
 
-    // 현재 인증된 사용자 ID 가져오는 헬퍼 메서드
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
-            GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
-            return userDetails.getUserId();
-        }
-        throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
-    }
 
     @GetMapping("/protected")
     public ResponseEntity<?> protectedEndpoint() {
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);

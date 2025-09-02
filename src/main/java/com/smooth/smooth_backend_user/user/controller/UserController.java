@@ -5,20 +5,13 @@ import com.smooth.smooth_backend_user.user.dto.request.UpdateEmergencyInfoReques
 import com.smooth.smooth_backend_user.user.dto.response.UserProfileResponseDto;
 import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.global.common.ApiResponse;
-import com.smooth.smooth_backend_user.global.auth.GatewayUserDetails;
+import com.smooth.smooth_backend_user.global.auth.AuthenticationUtils;
 import com.smooth.smooth_backend_user.user.service.UserService;
-import com.smooth.smooth_backend_user.global.exception.BusinessException;
-import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Cookie;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,30 +27,6 @@ public class UserController {
     @Value("${app.cookie.secure:false}")
     private boolean cookieSecure;
 
-    // 현재 로그인한 사용자 ID 가져오는 헬퍼 메서드 (Gateway 헤더 기반)
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
-            GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
-            return userDetails.getUserId();
-        }
-        
-        // Fallback: HTTP 헤더에서 직접 읽기
-        ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-        HttpServletRequest request = attr.getRequest();
-        String userIdHeader = request.getHeader("X-User-Id");
-        String authenticatedHeader = request.getHeader("X-Authenticated");
-        
-        if (userIdHeader != null && "true".equals(authenticatedHeader)) {
-            try {
-                return Long.valueOf(userIdHeader);
-            } catch (NumberFormatException e) {
-                log.error("Invalid userId format in header: {}", userIdHeader);
-            }
-        }
-        
-        throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
-    }
 
     // 리프레시 토큰 쿠키 삭제하는 헬퍼 메서드
     private void clearRefreshTokenCookie(HttpServletResponse response) {
@@ -74,7 +43,7 @@ public class UserController {
     // 회원 정보 조회
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserProfileResponseDto>> getUserProfile() {
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
         User user = userService.findById(userId);
         UserProfileResponseDto response = UserProfileResponseDto.fromUser(user);
 
@@ -88,7 +57,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Validated @RequestBody ChangePasswordRequestDto dto) {
 
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
         userService.changePassword(userId, dto);
 
         return ResponseEntity.ok(
@@ -101,7 +70,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateEmergencyInfo(
             @Validated @RequestBody UpdateEmergencyInfoRequestDto dto) {
 
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
         User updatedUser = userService.updateEmergencyInfo(userId, dto);
         UserProfileResponseDto response = UserProfileResponseDto.fromUser(updatedUser);
 
@@ -113,7 +82,7 @@ public class UserController {
     // 내 정보 간단 조회 (이름, 이메일만)
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserSimpleInfoDto>> getMyInfo() {
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
         User user = userService.findById(userId);
 
         UserSimpleInfoDto info = UserSimpleInfoDto.builder()
@@ -131,7 +100,7 @@ public class UserController {
     // 회원탈퇴
     @DeleteMapping("/account")
     public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletResponse response) {
-        Long userId = getCurrentUserId();
+        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
         
         // 회원 정보 삭제
         userService.deleteAccount(userId);
@@ -141,7 +110,7 @@ public class UserController {
         
         log.info("회원탈퇴 완료 - 사용자 ID: {}", userId);
         return ResponseEntity.ok(
-                ApiResponse.success("회원탈퇴가 완료되었습니다. 모든 인증 토큰이 무효화되었습니다.")
+                ApiResponse.success("회원탈퇴가 완료되었습니다.")
         );
     }
 
