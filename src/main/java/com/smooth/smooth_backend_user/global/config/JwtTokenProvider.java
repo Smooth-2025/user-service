@@ -146,15 +146,4 @@ public class JwtTokenProvider {
         return claims.get("email", String.class);
     }
 
-    // 리프레시 토큰의 남은 시간 확인 (밀리초)
-    public long getRemainingTimeFromToken(Claims claims) {
-        Date expiration = claims.getExpiration();
-        return expiration.getTime() - System.currentTimeMillis();
-    }
-
-    // 리프레시 토큰 재발급이 필요한지 확인 (10분 = 600000ms 미만일 때)
-    public boolean needsRefreshTokenRenewal(Claims claims) {
-        long remainingTime = getRemainingTimeFromToken(claims);
-        return remainingTime <= 600000; // 10분
-    }
 }
