@@ -98,6 +98,12 @@ public class AuthService {
         log.info("사용자 로그아웃 완료");
     }
 
+    // 관리자 로그아웃
+    public void adminLogout(HttpServletResponse response) {
+        cookieUtils.clearRefreshTokenCookie(response);
+        log.info("관리자 로그아웃 완료");
+    }
+
     // 토큰 재발급
     public RefreshTokenResponseDto refreshToken(HttpServletRequest request, HttpServletResponse response) {
         // 쿠키에서 refresh token 추출
