@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CookieUtils {
 
-    @Value("${app.cookie.secure:false}")
+    @Value("${app.cookie.secure:true}")
     private boolean cookieSecure;
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
