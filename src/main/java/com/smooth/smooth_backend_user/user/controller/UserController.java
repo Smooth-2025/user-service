@@ -26,9 +26,6 @@ public class UserController {
     private final UserService userService;
     private final CookieUtils cookieUtils;
 
-
-
-
     // 회원 정보 조회
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserProfileResponseDto>> getUserProfile() {
@@ -68,24 +65,6 @@ public class UserController {
         );
     }
 
-    // 내 정보 간단 조회 (이름, 이메일만)
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserSimpleInfoDto>> getMyInfo() {
-        Long userId = AuthenticationUtils.getCurrentUserIdOrThrow();
-        User user = userService.findById(userId);
-
-        UserSimpleInfoDto info = UserSimpleInfoDto.builder()
-                .id(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .build();
-
-        return ResponseEntity.ok(
-                ApiResponse.success("사용자 정보 조회 성공", info)
-        );
-    }
-
     // 회원탈퇴
     @DeleteMapping("/account")
     public ResponseEntity<ApiResponse<Void>> deleteAccount(HttpServletResponse response) {
@@ -101,16 +80,5 @@ public class UserController {
         return ResponseEntity.ok(
                 ApiResponse.success("회원탈퇴가 완료되었습니다.")
         );
-    }
-
-    // 간단한 사용자 정보 DTO
-    @lombok.Builder
-    @lombok.Getter
-    @lombok.AllArgsConstructor
-    public static class UserSimpleInfoDto {
-        private Long id;
-        private String name;
-        private String email;
-        private String phone;
     }
 }

@@ -54,7 +54,7 @@ public class InternalController {
         } catch (BusinessException e) {
             log.warn("단건 성향 조회 실패: userId={}, error={}", userId, e.getErrorCode());
 
-            // 노션 스펙에 맞는 에러 응답 형식
+            // 에러 응답 형식
             if (e.getErrorCode() == UserErrorCode.TRAIT_NOT_FOUND) {
                 return ResponseEntity.status(404).body(createErrorResponse("TRAIT_NOT_FOUND", "No character for userId=" + userId));
             } else if (e.getErrorCode() == UserErrorCode.INVALID_USER_ID) {
@@ -83,7 +83,7 @@ public class InternalController {
         } catch (BusinessException e) {
             log.warn("응급정보 조회 실패: userId={}, error={}", userId, e.getErrorCode());
 
-            // 노션 스펙에 맞는 에러 응답 형식
+            // 에러 응답 형식
             if (e.getErrorCode() == UserErrorCode.USER_NOT_FOUND) {
                 return ResponseEntity.status(404).body(createErrorResponse("USER_NOT_FOUND", "사용자를 찾을 수 없습니다."));
             } else if (e.getErrorCode() == UserErrorCode.EMERGENCY_INFO_NOT_AVAILABLE) {
