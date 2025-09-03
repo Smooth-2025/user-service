@@ -42,7 +42,7 @@ services:
       # 로그레벨
       - LOGGING_LEVEL_COM_SMOOTH_BACKEND=${LOG_LEVEL:-INFO}
 
-      - APP_COOKIE_SECURE=${COOKIE_SECURE:-false}
+      - APP_COOKIE_SECURE=${COOKIE_SECURE:-true}
     restart: unless-stopped
 
 # 데이터 영속성을 위한 볼륨 정의

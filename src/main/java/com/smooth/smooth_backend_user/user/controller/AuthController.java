@@ -129,7 +129,7 @@ public class AuthController {
 
     @PostMapping("/admin-logout")
     public ResponseEntity<ApiResponse<Void>> adminLogout(HttpServletResponse response) {
-        authService.logout(response);
+        authService.adminLogout(response);
         return ResponseEntity.ok(
                 ApiResponse.success("관리자 로그아웃이 완료되었습니다.")
         );
