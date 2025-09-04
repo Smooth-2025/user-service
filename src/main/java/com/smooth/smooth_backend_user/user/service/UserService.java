@@ -1,5 +1,6 @@
 package com.smooth.smooth_backend_user.user.service;
 
+import com.smooth.smooth_backend_user.user.client.dto.UserInfoResponse;
 import com.smooth.smooth_backend_user.user.dto.request.ChangePasswordRequestDto;
 import com.smooth.smooth_backend_user.user.dto.request.LoginRequestDto;
 import com.smooth.smooth_backend_user.user.dto.request.RegisterRequestDto;
@@ -7,6 +8,8 @@ import com.smooth.smooth_backend_user.user.dto.request.UpdateEmergencyInfoReques
 import com.smooth.smooth_backend_user.user.dto.request.AdminLoginRequestDto;
 import com.smooth.smooth_backend_user.user.entity.User;
 import com.smooth.smooth_backend_user.user.entity.UserRole;
+import com.smooth.smooth_backend_user.user.entity.UserVehicle;
+import com.smooth.smooth_backend_user.user.entity.Vehicle;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
 import com.smooth.smooth_backend_user.user.repository.UserRepository;
@@ -176,5 +179,23 @@ public class UserService {
             log.error("회원탈퇴 처리 중 오류 발생: 사용자 ID {}", userId, e);
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND, "회원탈퇴 처리 중 오류가 발생했습니다.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public UserInfoResponse getUserInfoForAdmin(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+
+        UserVehicle userVehicle = user.getUserVehicle();
+        Long vehicleId = null;
+        if(userVehicle != null && userVehicle.getVehicle() != null){
+            vehicleId = userVehicle.getVehicle().getId();
+        }
+
+        return UserInfoResponse.builder()
+                .userId(user.getId())
+                .userName(user.getName())
+                .vehicleId(vehicleId)
+                .build();
     }
 }

@@ -89,7 +89,7 @@ public class AuthService {
 
         log.info("관리자 로그인 성공 - 사용자 ID: {}, 이메일: {}", user.getId(), user.getEmail());
 
-        return AdminLoginResponseDto.success(user.getName(), accessToken);
+        return AdminLoginResponseDto.success(user.getName(), accessToken, user.getRole().name());
     }
 
     // 로그아웃
