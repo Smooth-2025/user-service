@@ -2,10 +2,12 @@ package com.smooth.smooth_backend_user.user.client.controller;
 
 import com.smooth.smooth_backend_user.user.client.dto.EmergencyInfoResponse;
 import com.smooth.smooth_backend_user.user.client.dto.TraitsBulkResponse;
+import com.smooth.smooth_backend_user.user.client.dto.UserInfoResponse;
 import com.smooth.smooth_backend_user.user.client.dto.UserTraitResponse;
 import com.smooth.smooth_backend_user.user.service.DriveCastService;
 import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
+import com.smooth.smooth_backend_user.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,28 @@ import org.springframework.web.bind.annotation.*;
 public class InternalController {
 
     private final DriveCastService driveCastService;
+    private final UserService userService;
+
+    @GetMapping("/users/{userId}/admin-info")
+    public ResponseEntity<?> getUserInfoForAdmin(@PathVariable Long userId, HttpServletRequest request){
+        log.info("관리자용 사용자 정보 조회 API 호출: userId={}", userId);
+
+        try {
+            UserInfoResponse response = userService.getUserInfoForAdmin(userId);
+            log.info("관리자용 사용자 정보 조회 완료: userId={}, userName={}",
+                    userId, response.getUserName());
+            return ResponseEntity.ok(response);
+        } catch (BusinessException e) {
+            log.warn("관리자용 사용자 정보 조회 실패: userId={}, error={}", userId, e.getErrorCode());
+            if (e.getErrorCode() == UserErrorCode.USER_NOT_FOUND) {
+                return ResponseEntity.status(404)
+                        .body(createErrorResponse("USER_NOT_FOUND", "사용자를 찾을 수 없습니다."));
+            } else {
+                return ResponseEntity.status(500)
+                        .body(createErrorResponse("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
+            }
+        }
+    }
 
     // 운전자 성향 벌크 조회 (웹서비스-주행페이지)
     // DriveCast → User Service
