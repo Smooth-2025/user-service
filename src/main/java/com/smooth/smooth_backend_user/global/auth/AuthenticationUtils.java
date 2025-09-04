@@ -19,6 +19,7 @@ public class AuthenticationUtils {
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_EMAIL_HEADER = "X-User-Email";
+    private static final String USER_ROLE_HEADER = "X-User-Role";
     private static final String AUTHENTICATED_HEADER = "X-Authenticated";
 
 
@@ -55,8 +56,19 @@ public class AuthenticationUtils {
     }
 
 
-//     현재 요청이 인증된 요청인지 확인
+//     현재 인증된 사용자의 역할을 반환
+    public static String getCurrentUserRole() {
+        // Gateway에서 헤더로 전달된 role 정보 사용
+        return getUserRoleFromHeader();
+    }
 
+//     현재 사용자가 관리자인지 확인
+    public static boolean isAdmin() {
+        String role = getCurrentUserRole();
+        return "ADMIN".equals(role);
+    }
+
+//     현재 요청이 인증된 요청인지 확인
     public static boolean isAuthenticated() {
         return getCurrentUserId() != null;
     }
@@ -119,5 +131,21 @@ public class AuthenticationUtils {
             log.debug("HTTP 헤더에서 사용자 이메일 추출 실패: {}", e.getMessage());
         }
         return null;
+    }
+
+    private static String getUserRoleFromHeader() {
+        try {
+            ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+            HttpServletRequest request = attr.getRequest();
+            String roleHeader = request.getHeader(USER_ROLE_HEADER);
+            String authenticatedHeader = request.getHeader(AUTHENTICATED_HEADER);
+
+            if (StringUtils.hasText(roleHeader) && "true".equals(authenticatedHeader)) {
+                return roleHeader;
+            }
+        } catch (Exception e) {
+            log.debug("HTTP 헤더에서 사용자 역할 추출 실패: {}", e.getMessage());
+        }
+        return "USER"; // 기본값
     }
 }
