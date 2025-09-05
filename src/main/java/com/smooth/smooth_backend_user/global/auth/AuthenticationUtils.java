@@ -1,11 +1,9 @@
 package com.smooth.smooth_backend_user.global.auth;
 
 import com.smooth.smooth_backend_user.global.exception.BusinessException;
-import com.smooth.smooth_backend_user.user.exception.UserErrorCode;
+import com.smooth.smooth_backend_user.global.exception.CommonErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -26,12 +24,6 @@ public class AuthenticationUtils {
 //     현재 인증된 사용자의 ID를 반환
 //     @return 사용자 ID (없으면 null)
     public static Long getCurrentUserId() {
-        // 1. SecurityContext에서 먼저 시도
-        Long userIdFromSecurity = getUserIdFromSecurityContext();
-        if (userIdFromSecurity != null) {
-            return userIdFromSecurity;
-        }
-        // 2. HTTP 헤더에서 시도 (Fallback)
         return getUserIdFromHeader();
     }
 
@@ -39,7 +31,7 @@ public class AuthenticationUtils {
     public static Long getCurrentUserIdOrThrow() {
         Long userId = getCurrentUserId();
         if (userId == null) {
-            throw new BusinessException(UserErrorCode.INVALID_TOKEN, "인증되지 않은 사용자입니다.");
+            throw new BusinessException(CommonErrorCode.UNAUTHORIZED, "인증되지 않은 사용자입니다.");
         }
         return userId;
     }
@@ -47,11 +39,6 @@ public class AuthenticationUtils {
 
 //     현재 인증된 사용자의 이메일을 반환
     public static String getCurrentUserEmail() {
-        // SecurityContext 우선, 실패하면 헤더에서
-        String emailFromSecurity = getUserEmailFromSecurityContext();
-        if (StringUtils.hasText(emailFromSecurity)) {
-            return emailFromSecurity;
-        }
         return getUserEmailFromHeader();
     }
 
@@ -75,18 +62,6 @@ public class AuthenticationUtils {
 
     // Private Helper Methods
     
-    private static Long getUserIdFromSecurityContext() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
-                GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
-                return userDetails.getUserId();
-            }
-        } catch (Exception e) {
-            log.debug("SecurityContext에서 사용자 ID 추출 실패: {}", e.getMessage());
-        }
-        return null;
-    }
 
     private static Long getUserIdFromHeader() {
         try {
@@ -104,18 +79,6 @@ public class AuthenticationUtils {
         return null;
     }
 
-    private static String getUserEmailFromSecurityContext() {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getPrincipal() instanceof GatewayUserDetails) {
-                GatewayUserDetails userDetails = (GatewayUserDetails) authentication.getPrincipal();
-                return userDetails.getEmail();
-            }
-        } catch (Exception e) {
-            log.debug("SecurityContext에서 사용자 이메일 추출 실패: {}", e.getMessage());
-        }
-        return null;
-    }
 
     private static String getUserEmailFromHeader() {
         try {
